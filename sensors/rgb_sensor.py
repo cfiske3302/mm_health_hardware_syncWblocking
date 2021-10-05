@@ -25,7 +25,7 @@ class RGB_Sensor(Sensor):
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
-        self.reader = imageio.get_reader('<video1>', format = "FFMPEG", dtype = "uint8", **kargs)
+        self.reader = imageio.get_reader('<video0>', format = "FFMPEG", dtype = "uint8", **kargs)
 
     def __del__(self) -> None:
         self.release_sensor()

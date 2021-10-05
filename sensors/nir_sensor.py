@@ -70,7 +70,7 @@ class NIR_Sensor(Sensor):
                 continue
             frames[i] = im_arr
 
-        imageio.mimwrite(self.filepath + self.format, frames)
+        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
 
         self.save_timestamps()
         self.time_stamps = []

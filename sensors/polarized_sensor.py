@@ -79,8 +79,7 @@ class Polarized_Sensor(Sensor):
         # set width
         if self.cam_polar.Width.GetAccessMode() == PySpin.RW and self.cam_polar.Width.GetInc() != 0 and self.cam_polar.Width.GetMax != 0:
             self.cam_polar.Width.SetValue(self.width)
-            print("Width set to %i..." % self.cam_polar.Width.GetValue() )
-
+            # print("Width set to %i..." % self.cam_polar.Width.GetValue() )
         else:
             print("Width not available...")
             result = False
@@ -88,8 +87,7 @@ class Polarized_Sensor(Sensor):
         # set height
         if self.cam_polar.Height.GetAccessMode() == PySpin.RW and self.cam_polar.Height.GetInc() != 0 and self.cam_polar.Height.GetMax != 0:
             self.cam_polar.Height.SetValue(self.height)
-            print("Height set to %i..." % self.cam_polar.Height.GetValue() )
-
+            # print("Height set to %i..." % self.cam_polar.Height.GetValue() )
         else:
             print("Height not available...")
             result = False
@@ -114,7 +112,7 @@ class Polarized_Sensor(Sensor):
                 image_result.Release()
 
         self.cam_polar.EndAcquisition()
-        imageio.mimwrite(self.filepath + self.format, frames)
+        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
         self.save_timestamps()
         self.time_stamps = []
             

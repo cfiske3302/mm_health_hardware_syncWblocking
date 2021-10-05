@@ -14,6 +14,7 @@ from sensors.mx800_sensor import *
 from sensors.rf_sensor import *
 import sensors.sensor
 from postproc.data_interpolation import *
+from postproc.tiff_to_avi import *
 
 def cleanup_mx800(folder_name):
     file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv']
@@ -112,10 +113,10 @@ if __name__ == '__main__':
     # sensors = [rgb_main, nir_main, polarized_main, mic_main, webcam_main, mx800_main]
     # sensors = [rgb_main, nir_main, polarized_main, mic_main, webcam_main] #thermal_main, polarized_main
     # sensors_list = [rgbd_main, nir_main, polarized_main, progress_main]  
-    sensors_list = [rgb_main, mx800_main, progress_main]
+    sensors_list = [rgbd_main, nir_main, polarized_main, rf_main, progress_main]
     jobs = []
     num_sensors = len(sensors_list) #RGB, NIR, Polarized, Webcam Audio, Mic Audio
-    time_acquire = 5 #seconds
+    time_acquire = 30 #seconds
     sync_barrior = mp.Barrier(num_sensors)
     #-------------------- Folder Config ---------------------------
     folder_name = "testing6"
@@ -135,5 +136,15 @@ if __name__ == '__main__':
     print("Time taken: {}".format(end-start))
     
     #--------------------- Post-Processing ---------------------------
-    cleanup_mx800(data_folder_name)
-    interpolate_ppg_timestamp(sensor_file_name="rgb_1_local.txt", file_dir_mx800=data_folder_name)
+    if(sensors_list.count(mx800_main) != 0):
+        cleanup_mx800(data_folder_name)
+        interpolate_ppg_timestamp(sensor_file_name="rgb_1_local.txt", file_dir_mx800=data_folder_name)
+    
+    # find all tiff files, store their paths in a list
+    file_list = os.listdir(data_folder_name)
+    #for loop, iterate through each filepath and do the conversion
+    for file in file_list:
+        filename_ext = os.path.basename(file)
+        ext = os.path.splitext(filename_ext)[1]
+        if (ext == ".tiff"):
+            tiff_to_avi(os.path.join(data_folder_name, file))

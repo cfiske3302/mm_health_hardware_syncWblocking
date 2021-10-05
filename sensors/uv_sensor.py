@@ -48,7 +48,7 @@ class UV_Sensor(Sensor):
             else:
                 break
 
-        imageio.mimwrite(self.filepath + self.format, frames)
+        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
 
         self.save_timestamps()
         self.time_stamps = []
