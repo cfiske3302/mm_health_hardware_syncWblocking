@@ -3,8 +3,14 @@ import os
 import sys
 
 config = configparser.ConfigParser()
-config.read( r"C:\Users\111\Desktop\mmhealth_2\sensors\configs\sensors_config.ini")
-sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
+#find absolute path to this directory
+this_dir = os.path.dirname(os.path.abspath(__file__))
+#add to PYTHONPATH
+sys.path.insert(0, this_dir)
+#Read in config to make avaliable to all other libraries
+config.read(os.path.join(this_dir, "configs", "sensors_config.ini"))
+#add absolute path as a config
+config.set("mmhealth", "abs_path", this_dir)
 
 if __name__ == '__main__':
 

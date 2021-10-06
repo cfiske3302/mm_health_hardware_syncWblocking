@@ -113,16 +113,22 @@ if __name__ == '__main__':
     # sensors = [rgb_main, nir_main, polarized_main, mic_main, webcam_main, mx800_main]
     # sensors = [rgb_main, nir_main, polarized_main, mic_main, webcam_main] #thermal_main, polarized_main
     # sensors_list = [rgbd_main, nir_main, polarized_main, progress_main]  
-    sensors_list = [rgbd_main, nir_main, polarized_main, rf_main, progress_main]
+    sensors_list = [rgbd_main, nir_main, polarized_main, progress_main]
     jobs = []
     num_sensors = len(sensors_list) #RGB, NIR, Polarized, Webcam Audio, Mic Audio
     time_acquire = 30 #seconds
     sync_barrior = mp.Barrier(num_sensors)
     #-------------------- Folder Config ---------------------------
-    folder_name = "testing6"
+    folder_name = "2"
+    folder_name += "_"
+    start_num = 1
     data_folder_name = os.path.join(config.get("mmhealth", "data_path"), folder_name)
-    if(not os.path.exists(data_folder_name)):
-        os.makedirs(data_folder_name)
+
+    while(os.path.exists(data_folder_name + str(start_num))):
+        start_num += 1
+    data_folder_name += str(start_num)
+    folder_name += str(start_num)
+    os.makedirs(data_folder_name)
     #-------------------- Start Sensors ----------------------------
     for sensor in sensors_list:
         proc = mp.Process(target=sensor, args= (time_acquire,folder_name,sync_barrior))

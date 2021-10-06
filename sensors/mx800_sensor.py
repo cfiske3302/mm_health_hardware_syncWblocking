@@ -6,7 +6,7 @@ import os
 import keyboard
 import sys
 
-sys.path.insert(0, r"C:\Users\111\Documents\mmhealth_features\mmhealth_master\sensors")
+from config import *
 from sensor import Sensor
 
 class MX800_Sensor(Sensor):
@@ -19,7 +19,7 @@ class MX800_Sensor(Sensor):
         #set parameters for video recorder
         self.long_pause = 1
         self.short_pause = 0.1
-        self.abs_path  = r"C:\Users\111\Documents\mmhealth_features\mmhealth_master\sensors\mx800\VSCaptureMP-master\VSCaptureMP\VSCaptureMP\bin\Debug" 
+        self.abs_path  = os.path.join(config.get("mmhealth", "abs_path"), r"mx800\VSCaptureMP-master\VSCaptureMP\VSCaptureMP\bin\Debug" )
 
         #initialize capture
         os.startfile(os.path.join(self.abs_path, "VSCaptureMP.exe"))

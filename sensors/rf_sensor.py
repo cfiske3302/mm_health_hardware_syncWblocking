@@ -8,7 +8,6 @@ import subprocess
 from mmwave.dataloader import DCA1000
 import time
 
-sys.path.insert(0, r"C:\Users\111\Documents\mmhealth_features\mmhealth_master\sensors")
 from sensor import Sensor
 
 class RF_Sensor(Sensor):
