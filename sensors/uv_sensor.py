@@ -17,11 +17,12 @@ class UV_Sensor(Sensor):
         
         #initialize capture
         self.format = ".tiff"
-        self.fps     = config.getint("uv", "fps")
+        self.fps     = config.getint("mmhealth", "fps")
         self.width   = config.getint("uv", "width") #not setting
         self.height  = config.getint("uv", "height") #not setting
         self.channels = config.getint("uv", "channels") #not setting
         self.compression = config.getint("uv", "compression")
+        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
@@ -32,7 +33,10 @@ class UV_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         
     def acquire(self, acquisition_time : int) -> bool:
-        NUM_FRAMES = self.fps*acquisition_time  # number of images to use in AVI file
+        if (self.calibrate_mode is True): # TODO
+            NUM_FRAMES = 1
+        else:
+            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
         frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint16'))
 
         for im in self.reader:

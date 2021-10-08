@@ -17,11 +17,13 @@ class RGB_Sensor(Sensor):
         
         #initialize capture
         self.format = ".tiff"
-        self.fps     = config.getint("rgb", "fps")
+        self.fps     = config.getint("mmhealth", "fps")
         self.width   = config.getint("rgb", "width") #not setting
         self.height  = config.getint("rgb", "height") #not setting
         self.channels = config.getint("rgb", "channels") #not setting
         self.compression = config.getint("rgb", "compression")
+        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
@@ -33,7 +35,10 @@ class RGB_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        NUM_FRAMES = self.fps*acquisition_time  # number of images to use in AVI file
+        if (self.calibrate_mode is True): # TODO
+            NUM_FRAMES = 1
+        else:
+            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
         frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint16'))
 
         for im in self.reader:

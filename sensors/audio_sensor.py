@@ -18,8 +18,8 @@ class Audio_Sensor(Sensor):
         self.filename = filename
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = config.getint("audio", "channels")
-        self.RATE = config.getint("audio", "sample_rate")
-        self.CHUNK = config.getint("audio", "chunk")
+        self.RATE = 44100#config.getint("audio", "sample_rate")
+        self.CHUNK = 1024#config.getint("audio", "chunk")
         self.RECORD_SECONDS = 5
         self.WAVE_OUTPUT_FILENAME = self.filepath + ".wav"
 
@@ -33,7 +33,7 @@ class Audio_Sensor(Sensor):
         #initialize capture
         self.sensor_type = "microphone"
         self.frames = []
-        self.stream = audio.open(format=self.FORMAT, channels=1, rate=self.RATE, input=True, frames_per_buffer=self.CHUNK, input_device_index=self.input_device_index)
+        self.stream = audio.open(format=self.FORMAT, channels=1, rate=self.RATE, input=True, frames_per_buffer=self.CHUNK)#, input_device_index=self.input_device_index)
 
 
     def __del__(self) -> None:
@@ -65,19 +65,18 @@ class Audio_Sensor(Sensor):
     def release_sensor(self) -> bool:
         self.waveFile.close()
 
-
     def print_stats(self):
         print("_____________ Audio Specifications _____________")
         print("Rate = {} 1/s".format(self.RATE))
         print("Channels = {}".format(self.CHANNELS))
         print("Recording Length: {}".format(self.RECORD_SECONDS))
 
-# #To test code, run this file.
-# if __name__ == '__main__':
+#To test code, run this file.
+if __name__ == '__main__':
 
-#     # Parallelize this??
-#     mic = Audio_Sensor(filename="mic_audio_1") # input_device_index = 1
-#     # webcam = Audio_Sensor(filename="webcam_audio_1") # input_device_index = 2
+    # Parallelize this??
+    mic = Audio_Sensor(foldername= "2_1", filename="mic_audio_1") # input_device_index = 1
+    # webcam = Audio_Sensor(filename="webcam_audio_1") # input_device_index = 2
 
-#     mic.acquire(acquisition_time=5)
-#     # webcam.acquire(acquisition_time=5)
+    mic.acquire(acquisition_time=10)
+    # webcam.acquire(acquisition_time=5)

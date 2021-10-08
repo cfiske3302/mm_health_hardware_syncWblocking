@@ -19,11 +19,12 @@ class RGBD_Sensor(Sensor):
         super().__init__(filename=filename, foldername=foldername)
 
         self.sensor_type = "rgbd_camera"
-        self.fps     = config.getint("rgbd", "fps")
+        self.fps     = config.getint("mmhealth", "fps")
         self.width   = config.getint("rgbd", "width") 
         self.height  = config.getint("rgbd", "height") 
         self.channels = config.getint("rgbd", "channels") #not settingg
         self.compression = config.getint("rgbd", "compression")
+        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
         
         # Create a Camera object
         self.zed = sl.Camera()
@@ -59,7 +60,10 @@ class RGBD_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
+        if (self.calibrate_mode is True): # TODO
+            NUM_FRAMES = 1
+        else:
+            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
 
         im_frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint8'))
         # depth_frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('float32')) # TODO
@@ -77,7 +81,7 @@ class RGBD_Sensor(Sensor):
                 im_frames[i] = im_arr
                 # depth_frames[i] = depth_arr # TODO
         
-        imageio.mimwrite(self.filepath + "_rgb" + self.format, im_frames, bigtiff=True)
+        imageio.mimwrite(self.filepath + self.format, im_frames, bigtiff=True)
         # imageio.mimwrite(self.filepath + "_depth" + self.format, depth_frames) # TODO
 
         self.save_timestamps()

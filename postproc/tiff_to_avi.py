@@ -5,11 +5,7 @@ import imageio
 import cv2
 import sys
 
-sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
 from config import *
-
-config = configparser.ConfigParser()
-config.read( r"C:\Users\111\Desktop\mmhealth_2\sensors\configs\sensors_config.ini")
 
 # input_filepath = str(sys.argv[1])
 def tiff_to_avi(input_filepath):
@@ -18,7 +14,6 @@ def tiff_to_avi(input_filepath):
     filename = os.path.splitext(filename_ext)[0]
     # ext = os.path.splitext(filename_ext)[1]
     # print(ext)
-    output_filepath = os.path.join(path, filename + "_avi.avi")
 
     sensor_type = filename[:2]
     if(sensor_type == "ni"):
@@ -41,20 +36,35 @@ def tiff_to_avi(input_filepath):
     height = config.getint(sensor_type, "height") 
     fps = config.getint(sensor_type, "fps")
 
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    video = cv2.VideoWriter(output_filepath, fourcc, fps, (width, height))
-
-    imarray = imarray = imageio.volread(input_filepath) 
+    imarray = imageio.volread(input_filepath) 
+    imarray = imarray.astype("uint8")
     print(imarray.shape) 
     # imarray = imarray.astype("uint8") #uint8
     NUM_FRAMES = imarray.shape[0]
-    for i in range (NUM_FRAMES):
-        frame = imarray[i]
+
+    if(NUM_FRAMES == 1):
+        frame = imarray[0]
+        output_filepath = os.path.join(path, filename + ".jpeg")
         if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-        video.write(frame)
-
-    video.release()
+            cv2.imwrite(output_filepath, frame.astype(np.uint8))
+        else:
+            cv2.imwrite(output_filepath, frame.astype(np.uint8))
+    else:
+        output_filepath = os.path.join(path, filename + "_avi.avi")
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        video = cv2.VideoWriter(output_filepath, fourcc, fps, (width, height))
+        if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
+            for i in range (NUM_FRAMES):
+                frame = imarray[i]
+                frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+                video.write(frame)
+            video.release()   
+        else:
+            for i in range (NUM_FRAMES):
+                frame = imarray[i]
+                video.write(frame)
+            video.release()        
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":

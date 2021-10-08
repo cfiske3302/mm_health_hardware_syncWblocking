@@ -16,11 +16,12 @@ class NIR_Sensor(Sensor):
         
         #sensor info
         self.sensor_type = "nir_camera"
-        self.fps     = config.getint("nir", "fps")
+        self.fps     = config.getint("mmhealth", "fps")
         self.width   = config.getint("nir", "width")
         self.height  = config.getint("nir", "height")
         self.channels = config.getint("nir", "channels")
         self.compression = config.getint("nir", "compression")
+        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
 
         # Ensure sufficient cameras are found
         bus = PyCapture2.BusManager()
@@ -56,7 +57,10 @@ class NIR_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
 
     def acquire(self, acquisition_time : int) -> bool:
-        NUM_FRAMES = self.fps*acquisition_time  # number of images to use in AVI file
+        if (self.calibrate_mode is True): # TODO
+            NUM_FRAMES = 1
+        else:
+            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
         frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint8'))
         # video = PyCapture2.FlyCapture2Video()
         # video.AVIOpen((self.filepath + self.format).encode('utf-8'), self.fps)

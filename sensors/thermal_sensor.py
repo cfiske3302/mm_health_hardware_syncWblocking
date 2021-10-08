@@ -17,11 +17,12 @@ class Thermal_Sensor(Sensor):
         
         #initialize capture
         self.format = ".tiff"
-        self.fps     = config.getint("thermal", "fps")
+        self.fps     = config.getint("mmhealth", "fps")
         self.width   = config.getint("thermal", "width") #not setting
         self.height  = config.getint("thermal", "height") #not setting
         self.channels = config.getint("thermal", "channels") #not setting
         self.compression = config.getint("thermal", "compression")
+        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
         # self.acquisition_time = 5
         self.counter = 0
 
@@ -34,7 +35,10 @@ class Thermal_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        NUM_FRAMES = self.fps*acquisition_time  # number of images to use in AVI file
+        if (self.calibrate_mode is True): # TODO
+            NUM_FRAMES = 1
+        else:
+            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
         frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
 
         for im in self.reader:
@@ -69,5 +73,7 @@ class Thermal_Sensor(Sensor):
 if __name__ == '__main__':
 
     thermal_cam = Thermal_Sensor(filename="thermal_1")
-    thermal_cam.acquire(acquisition_time=5)
+    thermal_cam.acquire(acquisition_time=0.1)
     thermal_cam.print_stats()
+
+    
