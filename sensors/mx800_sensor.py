@@ -5,6 +5,7 @@ import time
 import os
 import keyboard
 import sys
+import shutil
 
 from config import *
 from sensor import Sensor
@@ -19,7 +20,7 @@ class MX800_Sensor(Sensor):
         #set parameters for video recorder
         self.long_pause = 1
         self.short_pause = 0.1
-        self.abs_path  = os.path.join(config.get("mmhealth", "abs_path"), r"mx800\VSCaptureMP-master\VSCaptureMP\VSCaptureMP\bin\Debug" )
+        self.abs_path  = r"C:\Users\111\Desktop\mmhealth_2\sensors\VSCaptureMP-master\VSCaptureMP\VSCaptureMP\bin\Debug"
 
         #initialize capture
         os.startfile(os.path.join(self.abs_path, "VSCaptureMP.exe"))
@@ -57,7 +58,8 @@ class MX800_Sensor(Sensor):
         pyautogui.press('enter')
         # IP Address
         time.sleep(self.short_pause)
-        keyboard.write('192.168.33.32')
+        keyboard.write('169.254.150.16') # 192.168.33.32
+        pyautogui.press('enter')
 
     def __del__(self) -> None:
         self.release_sensor()

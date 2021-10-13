@@ -2,6 +2,7 @@ import numpy as np
 import os
 import scipy
 from scipy import interpolate
+import matplotlib.pyplot as plt
 
 import sys
 import os
@@ -18,41 +19,76 @@ def extract_timestamps(filename):
         # print(i.rstrip() + "s")
         time_obj = datetime.strptime(i.rstrip(), '%Y-%m-%d %H:%M:%S.%f')
         ts.append(time_obj.timestamp())
-        print(time_obj.timestamp())
+        # print(time_obj.timestamp())
     
     return np.array(ts)
 
-def extract_data(filename):
-    file = open(filename, 'r', encoding='utf-8-sig')
+def extract_data(input_filepath):
+    file = open(input_filepath, 'r', encoding='utf-8-sig')
     csvreader = csv.reader(file)
     stamp_list = []
-    for i in csvreader:
-        stamp_list.append(i)
+    
+    path = os.path.dirname(input_filepath)
+    filename_ext = os.path.basename(input_filepath)
+    filename = os.path.splitext(filename_ext)[0]
 
-    mx_stamps = []
-    sys_stamps = []
-    pleth = []
+    if(filename == "MPDataExport"):
+        # This skips the first row of the CSV file.
+        next(csvreader)
+        for i in csvreader:
+            stamp_list.append(i)
 
-    print(stamp_list[0])
+        mx_stamps = []
+        sys_stamps = []
+        hr = []
 
-    for j in range(len(stamp_list)):
-        # print(stamp_list[j])
-        time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
-        # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
-        stamp_mx = time_obj_mx.timestamp()
-        mx_stamps.append(stamp_mx)
+        print(stamp_list[0])
 
-        time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
-        # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
-        stamp_sys = time_obj_sys.timestamp()
-        sys_stamps.append(stamp_sys)
+        for j in range(len(stamp_list)):
+            # print(stamp_list[j])
+            time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
+            # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
+            stamp_mx = time_obj_mx.timestamp()
+            mx_stamps.append(stamp_mx)
 
-        pleth.append(int(stamp_list[j][3]))
+            time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
+            # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
+            stamp_sys = time_obj_sys.timestamp()
+            sys_stamps.append(stamp_sys)
 
-        # print(stamp_mx, stamp_sys)
+            hr.append(int(stamp_list[j][13]))
 
-    return mx_stamps, sys_stamps, pleth
+            # print(stamp_mx, stamp_sys)
 
+        return mx_stamps, sys_stamps, hr
+
+    else: # i.e. NOM_PLETH
+        for i in csvreader:
+            stamp_list.append(i)
+
+        mx_stamps = []
+        sys_stamps = []
+        pleth = []
+
+        print(stamp_list[0])
+
+        for j in range(len(stamp_list)):
+            # print(stamp_list[j])
+            time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
+            # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
+            stamp_mx = time_obj_mx.timestamp()
+            mx_stamps.append(stamp_mx)
+
+            time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
+            # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
+            stamp_sys = time_obj_sys.timestamp()
+            sys_stamps.append(stamp_sys)
+            pleth.append(int(stamp_list[j][3]))
+
+            # print(stamp_mx, stamp_sys)
+
+        return mx_stamps, sys_stamps, pleth
+        
 def find_deltas(sys_stamps, mx_stamps):
     const_num = sys_stamps[0]
     deltas = []
@@ -128,25 +164,31 @@ def timestamp_process(ts):
         return temp
 
 def interpolate_ppg_timestamp(sensor_file_name, file_dir_mx800):
+    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
+
     file_dir_rgb =  file_dir_mx800
     file_dir_mx800 =  file_dir_mx800
 
     #constucting arrays for the data
     filename = file_dir_mx800 + r"\NOM_PLETHWaveExport.csv"
-    mx_stamps, sys_stamps, ppg = extract_data(filename=filename)
+    mx_stamps, sys_stamps, ppg = extract_data(input_filepath=filename)
 
     delta_array = find_deltas2(sys_stamps, mx_stamps)
     sys_mx_time_delta = np.mean(delta_array)
     mx_unrolled = unroll_stamps2(mx_stamps)
     ts_ppg = apply_delta(mx_unrolled, sys_mx_time_delta)
+    print("delta_array: {}".format(delta_array) )
+    print(sys_mx_time_delta)
+    print(mx_unrolled)
+    print("ts_ppg: {}".format(ts_ppg) )
 
     #loading the time stamp files
     filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
     ts_vid = extract_timestamps(filename2)
 
-    print(ts_ppg.shape, ts_vid.shape)
-    print(ts_ppg[0])
-    print(ts_vid[0])
+    # print(ts_ppg.shape, ts_vid.shape)
+    # print(ts_ppg[0])
+    # print(ts_vid[0])
 
     ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
     l1 = len(ts_ppg)
@@ -178,82 +220,145 @@ def interpolate_ppg_timestamp(sensor_file_name, file_dir_mx800):
     a = np.array(reinterp_ppg)
     np.savetxt(file_dir_mx800+'/'+"ppg.csv", reinterp_ppg, delimiter=",")
 
-    import matplotlib.pyplot as plt
-
     plt.plot(reinterp_ppg)
     plt.show()
 
-if __name__ == '__main__':
+def interpolate_hr_timestamp(sensor_file_name, file_dir_mx800):
+    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
 
-    num = sys.argv[1]
-    #Paths and directories
-    file_dir_rgb =  r"F:\IRB data\91\91_5"#"C:\Temp\mmhealth_data\testing4"
-    file_dir_mx800 =  r"F:\IRB data\91\91_5"
+    file_dir_rgb =  file_dir_mx800
+    file_dir_mx800 =  file_dir_mx800
 
     #constucting arrays for the data
-    filename = file_dir_mx800 + r"\NOM_PLETHWaveExport.csv"
-    mx_stamps, sys_stamps, ppg = extract_data(filename=filename)
+    filename = file_dir_mx800 + r"\MPDataExport.csv"
+    mx_stamps, sys_stamps, hr = extract_data(input_filepath=filename)
+    print("mx_stamps: {}".format(mx_stamps) )
+    print("sys_stamps: {}".format(sys_stamps) )
+    print("hr: {}".format(hr) )
 
     delta_array = find_deltas2(sys_stamps, mx_stamps)
     sys_mx_time_delta = np.mean(delta_array)
-    mx_unrolled = unroll_stamps2(mx_stamps)
-    ts_ppg = apply_delta(mx_unrolled, sys_mx_time_delta)
+    # mx_unrolled = unroll_stamps2(mx_stamps)
+    ts_hr = apply_delta(mx_stamps, sys_mx_time_delta)
+    print("delta_array: {}".format(delta_array) )
+    print(sys_mx_time_delta)
+    # print(mx_unrolled)    
+    print("ts_hr: {}".format(ts_hr) )
 
     #loading the time stamp files
-    filename2 =  file_dir_rgb + r"\91_5_local.txt"
+    filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
     ts_vid = extract_timestamps(filename2)
 
-    # print(ts_ppg)
-    # print(ts_vid)
-    print(ts_ppg.shape, ts_vid.shape)
-
-    print(ts_ppg[0])
-    print(ts_vid[0])
+    # print(ts_hr.shape, ts_vid.shape)
+    # print(ts_hr[0])
+    # print(ts_vid[0])
 
     ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
-    l1 = len(ts_ppg)
-    l2 = len(ppg)
+    l1 = len(ts_hr)
+    l2 = len(hr)
     if l1<l2:
-        ppg = ppg[0:l1]
+        hr = hr[0:l1]
     elif l2<l1:
-        ts_ppg = ts_ppg[0:l2]
+        ts_hr = ts_hr[0:l2]
     # ts_ppg = ts_ppg[0:-1]
 
-    ts_ppg_sec = ts_ppg 
+    ts_hr_sec = ts_hr 
     ts_vid_sec = ts_vid
 
-    #process the time stamps to return
-
-    
-
-    # ts_ppg_sec = []
-    # for t_temp in ts_ppg:
-    #     ts_ppg_sec.append(timestamp_process(t_temp))
-
-    # ts_vid_sec = []
-    # for t_temp in ts_vid:
-    #     ts_vid_sec.append(timestamp_process(t_temp))
-
-
     #interpolation function
-    f = interpolate.interp1d(ts_ppg_sec,ppg,kind='linear')
+    f = interpolate.interp1d(ts_hr_sec,hr,kind='linear')
 
-    reinterp_ppg = []
+    reinterp_hr = []
 
     for t_temp in ts_vid_sec:
-        if t_temp<ts_ppg_sec[0]:
-            reinterp_ppg.append(ppg[0])
-        elif t_temp>ts_ppg_sec[-1]:
-            reinterp_ppg.append(ppg[-1])
+        if t_temp<ts_hr_sec[0]:
+            reinterp_hr.append(hr[0])
+        elif t_temp>ts_hr_sec[-1]:
+            reinterp_hr.append(hr[-1])
         else:
-            reinterp_ppg.append(f(t_temp))
+            reinterp_hr.append(f(t_temp))
 
     #write to csv files
 
-    a = np.array(reinterp_ppg)
-    np.savetxt(file_dir_mx800+'/'+"ppg.csv", reinterp_ppg, delimiter=",")
+    a = np.array(reinterp_hr)
+    np.savetxt(file_dir_mx800+'/'+"hr.csv", reinterp_hr, delimiter=",")
 
-    import matplotlib.pyplot as plt
-
-    plt.plot(reinterp_ppg)
+    plt.plot(reinterp_hr)
     plt.show()
+
+def interpolate_timestamp(sensor_file_name, file_dir_mx800):
+    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
+
+    file_dir_rgb =  file_dir_mx800
+    file_dir_mx800 =  file_dir_mx800
+
+    #constucting arrays for the data
+    filename = file_dir_mx800 + r"\MPDataExport.csv"
+    mx_stamps, sys_stamps, hr = extract_data(input_filepath=filename)
+    print("mx_stamps: {}".format(mx_stamps) )
+    print("sys_stamps: {}".format(sys_stamps) )
+    print("hr: {}".format(hr) )
+
+    delta_array = find_deltas2(sys_stamps, mx_stamps)
+    sys_mx_time_delta = np.mean(delta_array)
+    # mx_unrolled = unroll_stamps2(mx_stamps)
+    ts_hr = apply_delta(mx_stamps, sys_mx_time_delta)
+    print("delta_array: {}".format(delta_array) )
+    print(sys_mx_time_delta)
+    # print(mx_unrolled)    
+    print("ts_hr: {}".format(ts_hr) )
+
+    #loading the time stamp files
+    filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
+    ts_vid = extract_timestamps(filename2)
+
+    # print(ts_hr.shape, ts_vid.shape)
+    # print(ts_hr[0])
+    # print(ts_vid[0])
+
+    ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
+    l1 = len(ts_hr)
+    l2 = len(hr)
+    if l1<l2:
+        hr = hr[0:l1]
+    elif l2<l1:
+        ts_hr = ts_hr[0:l2]
+    # ts_ppg = ts_ppg[0:-1]
+
+    ts_hr_sec = ts_hr 
+    ts_vid_sec = ts_vid
+
+    #interpolation function
+    f = interpolate.interp1d(ts_hr_sec,hr,kind='linear')
+
+    reinterp_hr = []
+
+    for t_temp in ts_vid_sec:
+        if t_temp<ts_hr_sec[0]:
+            reinterp_hr.append(hr[0])
+        elif t_temp>ts_hr_sec[-1]:
+            reinterp_hr.append(hr[-1])
+        else:
+            reinterp_hr.append(f(t_temp))
+
+    #write to csv files
+
+    a = np.array(reinterp_hr)
+    np.savetxt(file_dir_mx800+'/'+"hr.csv", reinterp_hr, delimiter=",")
+
+    plt.plot(reinterp_hr)
+    plt.show()
+
+# def ppg_matrix(sensors_list, file_dir_mx800):
+#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
+#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
+#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
+#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
+
+
+if __name__ == '__main__':
+    num = sys.argv[1]
+    data_folder_name = r"F:\IRB data\subject91\91_" + str(num)
+
+    interpolate_ppg_timestamp(sensor_file_name= "91_" + str(num) + "_local.txt", file_dir_mx800=data_folder_name)
+    interpolate_hr_timestamp(sensor_file_name= "91_" + str(num)+ "_local.txt", file_dir_mx800=data_folder_name)

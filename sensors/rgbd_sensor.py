@@ -24,7 +24,8 @@ class RGBD_Sensor(Sensor):
         self.height  = config.getint("rgbd", "height") 
         self.channels = config.getint("rgbd", "channels") #not settingg
         self.compression = config.getint("rgbd", "compression")
-        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+        self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
+        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "rgbd_rgb_calibrate_" )
         
         # Create a Camera object
         self.zed = sl.Camera()
@@ -60,32 +61,53 @@ class RGBD_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        if (self.calibrate_mode is True): # TODO
-            NUM_FRAMES = 1
+        if (self.calibrate_mode == 1):
+            run = True
+            while( run == True):
+                # Grab an image, a RuntimeParameters object must be given to grab()
+                if self.zed.grab(self.runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+                    # A new image is available if grab() returns SUCCESS
+                    self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
+                    self.zed.retrieve_measure(self.depth, sl.MEASURE.DEPTH) #TODO
+                    im_arr = self.image.get_data()[:, :, :3]
+                    frame = cv2.resize(im_arr, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+                    cv2.imshow('Input', frame)
+                    c = cv2.waitKey(1)
+                    if c == 27:
+                        break
+                    elif cv2.waitKey(1) & 0xFF == ord('s'):
+                        start_num = 1
+                        while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                            start_num += 1
+                        imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                    # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     run = False
+                    #     break
+        
         else:
             NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
 
-        im_frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint8'))
-        # depth_frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('float32')) # TODO
+            im_frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint8'))
+            depth_frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('float32')) # TODO
 
-        for i in range(NUM_FRAMES):
-            # Grab an image, a RuntimeParameters object must be given to grab()
-            if self.zed.grab(self.runtime_parameters) == sl.ERROR_CODE.SUCCESS:
-                # A new image is available if grab() returns SUCCESS
-                self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
-                # self.zed.retrieve_measure(self.depth, sl.MEASURE.DEPTH) #TODO
-                self.record_timestamp()
+            for i in range(NUM_FRAMES):
+                # Grab an image, a RuntimeParameters object must be given to grab()
+                if self.zed.grab(self.runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+                    # A new image is available if grab() returns SUCCESS
+                    self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
+                    self.zed.retrieve_measure(self.depth, sl.MEASURE.DEPTH) #TODO
+                    self.record_timestamp()
 
-                im_arr = self.image.get_data()[:, :, :3]
-                # depth_arr = self.depth.get_data() # TODO
-                im_frames[i] = im_arr
-                # depth_frames[i] = depth_arr # TODO
-        
-        imageio.mimwrite(self.filepath + self.format, im_frames, bigtiff=True)
-        # imageio.mimwrite(self.filepath + "_depth" + self.format, depth_frames) # TODO
+                    im_arr = self.image.get_data()[:, :, :3]
+                    depth_arr = self.depth.get_data() # TODO
+                    im_frames[i] = im_arr
+                    depth_frames[i] = depth_arr # TODO
+            
+            imageio.mimwrite(self.filepath + "_rgb" + self.format, im_frames, bigtiff=True)
+            imageio.mimwrite(self.filepath + "_depth" + self.format, depth_frames, bigtiff=True) # TODO
 
-        self.save_timestamps()
-        self.time_stamps = []
+            self.save_timestamps()
+            self.time_stamps = []
 
 
     def release_sensor(self) -> bool:
@@ -101,6 +123,6 @@ class RGBD_Sensor(Sensor):
 # #To test code, run this file.
 if __name__ == '__main__':
 
-    rgbd_cam = RGBD_Sensor(filename="rgbd_1")
+    rgbd_cam = RGBD_Sensor(filename="rgbd")
     rgbd_cam.acquire(acquisition_time=5)
     rgbd_cam.print_stats()

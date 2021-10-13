@@ -34,11 +34,10 @@ def tiff_to_avi(input_filepath):
 
     width = config.getint(sensor_type, "width") 
     height = config.getint(sensor_type, "height") 
-    fps = config.getint(sensor_type, "fps")
+    fps = config.getint("mmhealth", "fps")
 
     imarray = imageio.volread(input_filepath) 
     imarray = imarray.astype("uint8")
-    print(imarray.shape) 
     # imarray = imarray.astype("uint8") #uint8
     NUM_FRAMES = imarray.shape[0]
 
@@ -65,6 +64,8 @@ def tiff_to_avi(input_filepath):
                 frame = imarray[i]
                 video.write(frame)
             video.release()        
+    
+    print("Tiff to Avi Conversion: Sensor {} done! Shape: {}".format(sensor_type, imarray.shape) )
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":

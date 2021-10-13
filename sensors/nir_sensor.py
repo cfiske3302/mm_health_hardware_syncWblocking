@@ -21,7 +21,8 @@ class NIR_Sensor(Sensor):
         self.height  = config.getint("nir", "height")
         self.channels = config.getint("nir", "channels")
         self.compression = config.getint("nir", "compression")
-        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+        self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
+        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "nir_calibrate_" )
 
         # Ensure sufficient cameras are found
         bus = PyCapture2.BusManager()
@@ -36,9 +37,14 @@ class NIR_Sensor(Sensor):
 
 
         # set height and width
-        fmt7imgSet = PyCapture2.Format7ImageSettings(1, 0, 0, width = self.width, height = self.height)
-        fmt7pktInf, isValid = self.cam_nir.validateFormat7Settings(fmt7imgSet)
-        self.cam_nir.setFormat7ConfigurationPacket(fmt7pktInf.recommendedBytesPerPacket, fmt7imgSet)
+        if (self.height != 2048 and self.width != 2048):
+            fmt7imgSet = PyCapture2.Format7ImageSettings(1, 0, 0, width = self.width, height = self.height)
+            fmt7pktInf, isValid = self.cam_nir.validateFormat7Settings(fmt7imgSet)
+            self.cam_nir.setFormat7ConfigurationPacket(fmt7pktInf.recommendedBytesPerPacket, fmt7imgSet)
+        else:
+            fmt7imgSet = PyCapture2.Format7ImageSettings(0, 0, 0, width = self.width, height = self.height)
+            fmt7pktInf, isValid = self.cam_nir.validateFormat7Settings(fmt7imgSet)
+            self.cam_nir.setFormat7ConfigurationPacket(fmt7pktInf.recommendedBytesPerPacket, fmt7imgSet)
 
         # set fps
         self.cam_nir. setProperty(type = PyCapture2.PROPERTY_TYPE.FRAME_RATE, autoManualMode = False)
@@ -48,7 +54,6 @@ class NIR_Sensor(Sensor):
         # self.fps = int(fRateProp.absValue)
         self.format = ".tiff"
 
-        
         # print('Starting capture...')
         self.cam_nir.startCapture()
 
@@ -57,27 +62,48 @@ class NIR_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
 
     def acquire(self, acquisition_time : int) -> bool:
-        if (self.calibrate_mode is True): # TODO
-            NUM_FRAMES = 1
+        if (self.calibrate_mode == 1):
+            run = True
+            while( run == True):
+                try:
+                    image = self.cam_nir.retrieveBuffer()
+                    im_arr = np.array(image.getData(), dtype="uint8").reshape((image.getRows(), image.getCols()) )
+                    frame = cv2.resize(im_arr, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+                    cv2.imshow('Input', frame)
+                    c = cv2.waitKey(1)
+                    if c == 27:
+                        break
+                    elif cv2.waitKey(1) & 0xFF == ord('s'):
+                        start_num = 1
+                        while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                            start_num += 1
+                        imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                    # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     run = False
+                    #     break
+                except PyCapture2.Fc2error as fc2Err:
+                    print('Error retrieving buffer : %s' % fc2Err)
+                    continue
+
         else:
-            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
-        frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint8'))
-        # video = PyCapture2.FlyCapture2Video()
-        # video.AVIOpen((self.filepath + self.format).encode('utf-8'), self.fps)
-        for i in range(NUM_FRAMES):
-            try:
-                image = self.cam_nir.retrieveBuffer()
-                self.record_timestamp()
-                im_arr = np.array(image.getData(), dtype="uint8").reshape((image.getRows(), image.getCols()) )
-            except PyCapture2.Fc2error as fc2Err:
-                print('Error retrieving buffer : %s' % fc2Err)
-                continue
-            frames[i] = im_arr
+            NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
+            frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint8'))
+            # video = PyCapture2.FlyCapture2Video()
+            # video.AVIOpen((self.filepath + self.format).encode('utf-8'), self.fps)
+            for i in range(NUM_FRAMES):
+                try:
+                    image = self.cam_nir.retrieveBuffer()
+                    self.record_timestamp()
+                    im_arr = np.array(image.getData(), dtype="uint8").reshape((image.getRows(), image.getCols()) )
+                except PyCapture2.Fc2error as fc2Err:
+                    print('Error retrieving buffer : %s' % fc2Err)
+                    continue
+                frames[i] = im_arr
 
-        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
+            imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
 
-        self.save_timestamps()
-        self.time_stamps = []
+            self.save_timestamps()
+            self.time_stamps = []
             
     def release_sensor(self) -> bool:
         # Deinitialize camera

@@ -4,6 +4,7 @@ import imageio
 import numpy as np
 import sys
 import os
+import cv2
 
 from config import *
 from sensor import Sensor
@@ -22,7 +23,8 @@ class RGB_Sensor(Sensor):
         self.height  = config.getint("rgb", "height") #not setting
         self.channels = config.getint("rgb", "channels") #not setting
         self.compression = config.getint("rgb", "compression")
-        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+        self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
+        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "rgb_calibrate_" )
 
         self.counter = 0
 
@@ -35,29 +37,42 @@ class RGB_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        if (self.calibrate_mode is True): # TODO
-            NUM_FRAMES = 1
+        if (self.calibrate_mode == 1):
+            for im in self.reader:
+                frame = cv2.resize(im, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+                cv2.imshow('Input', frame)
+                c = cv2.waitKey(1)
+                if c == 27:
+                    break
+                elif cv2.waitKey(1) & 0xFF == ord('s'):
+                    start_num = 1
+                    while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                        start_num += 1
+                    imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im)
+                # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+        
         else:
-            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
-        frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint16'))
+            NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
+            frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint16'))
 
-        for im in self.reader:
-            if (self.counter < NUM_FRAMES):
-                if ((self.counter != 0)):
-                    if ( np.max(im  - frames[self.counter-1]) != 0 ):
+            for im in self.reader:
+                if (self.counter < NUM_FRAMES):
+                    if ((self.counter != 0)):
+                        if ( np.max(im  - frames[self.counter-1]) != 0 ):
+                            frames[self.counter] = im # Reads 3 channels, but each channel is identical (same pixel info)
+                            self.record_timestamp()
+                            self.counter += 1
+                    else:
                         frames[self.counter] = im # Reads 3 channels, but each channel is identical (same pixel info)
-                        self.record_timestamp()
                         self.counter += 1
                 else:
-                    frames[self.counter] = im # Reads 3 channels, but each channel is identical (same pixel info)
-                    self.counter += 1
-            else:
-                break
+                    break
 
-        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
+            imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
 
-        self.save_timestamps()
-        self.time_stamps = []
+            self.save_timestamps()
+            self.time_stamps = []
 
     def release_sensor(self) -> bool:
         pass

@@ -4,6 +4,7 @@ import imageio
 import numpy as np
 import sys
 import os
+import cv2
 
 from config import *
 from sensor import Sensor
@@ -22,12 +23,13 @@ class Thermal_Sensor(Sensor):
         self.height  = config.getint("thermal", "height") #not setting
         self.channels = config.getint("thermal", "channels") #not setting
         self.compression = config.getint("thermal", "compression")
-        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+        self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
+        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "thermal_calibrate_" )
         # self.acquisition_time = 5
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
-        self.reader = imageio.get_reader('<video0>', format = "FFMPEG", dtype = "uint16", **kargs)
+        self.reader = imageio.get_reader('<video0>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
 
     def __del__(self) -> None:
         self.release_sensor()
@@ -35,30 +37,50 @@ class Thermal_Sensor(Sensor):
         # print(self.filepath)
         
     def acquire(self, acquisition_time : int) -> bool:
-        if (self.calibrate_mode is True): # TODO
-            NUM_FRAMES = 1
+        if (self.calibrate_mode == 1):
+            for im in self.reader:
+                upsampled_frame = im[:,:,0]
+                downsampled_frame = upsampled_frame[::2,::2]
+                im_arr = downsampled_frame.astype(np.uint8)
+                im_arr = cv2.cvtColor(im_arr, cv2.COLOR_GRAY2RGB)
+                frame = cv2.resize(im_arr, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_AREA)
+                cv2.imshow('Input', frame)
+                c = cv2.waitKey(1)
+                if c == 27:
+                    break
+                elif cv2.waitKey(1) & 0xFF == ord('s'):
+                    start_num = 1
+                    while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                        start_num += 1
+                    imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
         else:
-            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
-        frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
+            NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
+            frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
 
-        for im in self.reader:
-            if (self.counter < NUM_FRAMES):
-                if ((self.counter != 0)):
-                    if ( np.max(im[:,:,0]  - frames[self.counter-1]) != 0 ):
-                        frames[self.counter] = im[:,:,0] # Reads 3 channels, but each channel is identical (same pixel info)
-                        self.record_timestamp()
+            for im in self.reader:
+                if (self.counter <= NUM_FRAMES):
+                    if ((self.counter != 0)):
+                        upsampled_frame = im[:,:,0]
+                        downsampled_frame = upsampled_frame[::2,::2]
+                        if ( np.max(downsampled_frame  - frames[self.counter-1]) != 0 ):
+                            frames[self.counter] = downsampled_frame # Reads 3 channels, but each channel is identical (same pixel info)
+                            self.record_timestamp()
+                            self.counter += 1
+                    else:
+                        upsampled_frame = im[:,:,0]
+                        frames[self.counter] = upsampled_frame[::2,::2] # Reads 3 channels, but each channel is identical (same pixel info)
                         self.counter += 1
                 else:
-                    frames[self.counter] = im[:,:,0] # Reads 3 channels, but each channel is identical (same pixel info)
-                    self.counter += 1
-            else:
-                break
+                    break
 
-        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
+            imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
 
-        self.save_timestamps()
-        self.time_stamps = []
+            self.save_timestamps()
+            self.time_stamps = []
 
+        
     def release_sensor(self) -> bool:
         #Release camera
         pass

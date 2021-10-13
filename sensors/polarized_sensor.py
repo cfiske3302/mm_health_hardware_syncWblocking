@@ -22,7 +22,8 @@ class Polarized_Sensor(Sensor):
         self.height  = config.getint("polarized", "height") 
         self.channels = config.getint("polarized", "channels") 
         self.compression = config.getint("polarized", "compression")
-        self.calibrate_mode = config.getboolean("mmhealth", "calibration_mode")
+        self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
+        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "polarized_calibrate_" )
         self.format = ".tiff"
 
         self.system = PySpin.System.GetInstance()
@@ -98,33 +99,58 @@ class Polarized_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
 
     def acquire(self, acquisition_time : int) -> bool:
-        if (self.calibrate_mode is True): # TODO
-            NUM_FRAMES = 1
-        else:
-            NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture
-        frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint8'))
-
         self.cam_polar.BeginAcquisition()
-        for i in range(NUM_FRAMES):
-            image_result = self.cam_polar.GetNextImage(1000)
-            self.record_timestamp()
-            if image_result.IsIncomplete():
-                print('Image incomplete with image status %d...' % image_result.GetImageStatus())
-            else:
-                img = image_result.GetNDArray()
-                frames[i] = img
-                image_result.Release()
+        if (self.calibrate_mode == 1):
+            run = True
+            while( run == True):
+                # self.cam_polar.BeginAcquisition()
+                image_result = self.cam_polar.GetNextImage(1000)
+                if image_result.IsIncomplete():
+                    print('Image incomplete with image status %d...' % image_result.GetImageStatus())
+                else:
+                    im_arr = image_result.GetNDArray()
+                    frame = cv2.resize(im_arr, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+                    cv2.imshow('Input', frame)
+                    c = cv2.waitKey(1)
+                    if c == 27:
+                        break
+                    elif cv2.waitKey(1) & 0xFF == ord('s'):
+                        start_num = 1
+                        while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                            start_num += 1
+                        imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                    # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     run = False
+                    #     break
+                    image_result.Release()
+            self.cam_polar.EndAcquisition()
 
-        self.cam_polar.EndAcquisition()
-        imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
-        self.save_timestamps()
-        self.time_stamps = []
+        else:
+            NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
+            frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint8'))
+
+            # self.cam_polar.BeginAcquisition()
+            for i in range(NUM_FRAMES):
+                image_result = self.cam_polar.GetNextImage(1000)
+                self.record_timestamp()
+                if image_result.IsIncomplete():
+                    print('Image incomplete with image status %d...' % image_result.GetImageStatus())
+                else:
+                    img = image_result.GetNDArray()
+                    frames[i] = img
+                    image_result.Release()
+
+            self.cam_polar.EndAcquisition()
+            imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
+            self.save_timestamps()
+            self.time_stamps = []
             
     def release_sensor(self) -> bool:
         self.cam_polar.DeInit()
         del self.cam_polar
         self.cam_list.Clear()
         self.system.ReleaseInstance()
+
 
     def print_stats(self):
         print("_____________ Polarized Camera Specifications _____________")
