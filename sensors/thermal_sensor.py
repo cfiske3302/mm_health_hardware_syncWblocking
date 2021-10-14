@@ -24,8 +24,7 @@ class Thermal_Sensor(Sensor):
         self.channels = config.getint("thermal", "channels") #not setting
         self.compression = config.getint("thermal", "compression")
         self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
-        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "thermal_calibrate_" )
-        # self.acquisition_time = 5
+        self.calibrate_format = ".png"
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
@@ -45,22 +44,34 @@ class Thermal_Sensor(Sensor):
                 im_arr = cv2.cvtColor(im_arr, cv2.COLOR_GRAY2RGB)
                 frame = cv2.resize(im_arr, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_AREA)
                 cv2.imshow('Input', frame)
-                c = cv2.waitKey(1)
-                if c == 27:
-                    break
-                elif cv2.waitKey(1) & 0xFF == ord('s'):
+
+                key = cv2.waitKey(1)
+                if key == ord('s'):
                     start_num = 1
-                    while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                    while(os.path.exists(self.filepath + "_" + str(start_num) + self.calibrate_format)):
                         start_num += 1
-                    imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
-                # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    imageio.imwrite(self.filepath + "_" + str(start_num) + self.calibrate_format, im_arr)
+                elif key == ord('q'):
+                    run = False
+                    cv2.destroyAllWindows()
+                    break
+
+                # c = cv2.waitKey(1)
+                # if c == 27:
                 #     break
+                # elif cv2.waitKey(1) & 0xFF == ord('s'):
+                #     start_num = 1
+                #     while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                #         start_num += 1
+                #     imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                # # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                # #     break
         else:
             NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
             frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
 
             for im in self.reader:
-                if (self.counter <= NUM_FRAMES):
+                if (self.counter < NUM_FRAMES):
                     if ((self.counter != 0)):
                         upsampled_frame = im[:,:,0]
                         downsampled_frame = upsampled_frame[::2,::2]
@@ -71,6 +82,7 @@ class Thermal_Sensor(Sensor):
                     else:
                         upsampled_frame = im[:,:,0]
                         frames[self.counter] = upsampled_frame[::2,::2] # Reads 3 channels, but each channel is identical (same pixel info)
+                        self.record_timestamp()
                         self.counter += 1
                 else:
                     break

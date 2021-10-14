@@ -3,12 +3,17 @@ import os
 import scipy
 from scipy import interpolate
 import matplotlib.pyplot as plt
+import json
+from six import string_types
 
 import sys
 import os
 import time
 import csv
 from datetime import datetime
+
+sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
+from config import *
 
 def extract_timestamps(filename):
     file = open(filename, 'r')
@@ -23,10 +28,11 @@ def extract_timestamps(filename):
     
     return np.array(ts)
 
-def extract_data(input_filepath):
+def extract_data(input_filepath, vital_sign):
     file = open(input_filepath, 'r', encoding='utf-8-sig')
     csvreader = csv.reader(file)
     stamp_list = []
+    idx = 3
     
     path = os.path.dirname(input_filepath)
     filename_ext = os.path.basename(input_filepath)
@@ -35,59 +41,41 @@ def extract_data(input_filepath):
     if(filename == "MPDataExport"):
         # This skips the first row of the CSV file.
         next(csvreader)
-        for i in csvreader:
-            stamp_list.append(i)
+        if(vital_sign == "hr_ppg"):
+            idx = 3
+        elif(vital_sign == "resp_rate"):
+            idx = 4
+        elif(vital_sign == "spO2"):
+            idx = 13
+        elif(vital_sign == "hr_ppg"):
+            idx = 14
+    
+    for i in csvreader:
+        stamp_list.append(i)
 
-        mx_stamps = []
-        sys_stamps = []
-        hr = []
+    mx_stamps = []
+    sys_stamps = []
+    data = []
 
-        print(stamp_list[0])
+    # print(stamp_list[0])
 
-        for j in range(len(stamp_list)):
-            # print(stamp_list[j])
-            time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
-            # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
-            stamp_mx = time_obj_mx.timestamp()
-            mx_stamps.append(stamp_mx)
+    for j in range(len(stamp_list)):
+        # print(stamp_list[j])
+        time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
+        # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
+        stamp_mx = time_obj_mx.timestamp()
+        mx_stamps.append(stamp_mx)
 
-            time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
-            # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
-            stamp_sys = time_obj_sys.timestamp()
-            sys_stamps.append(stamp_sys)
+        time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
+        # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
+        stamp_sys = time_obj_sys.timestamp()
+        sys_stamps.append(stamp_sys)
 
-            hr.append(int(stamp_list[j][13]))
+        data.append(int(stamp_list[j][idx]))
 
-            # print(stamp_mx, stamp_sys)
+        # print(stamp_mx, stamp_sys)
 
-        return mx_stamps, sys_stamps, hr
-
-    else: # i.e. NOM_PLETH
-        for i in csvreader:
-            stamp_list.append(i)
-
-        mx_stamps = []
-        sys_stamps = []
-        pleth = []
-
-        print(stamp_list[0])
-
-        for j in range(len(stamp_list)):
-            # print(stamp_list[j])
-            time_obj_mx = datetime.strptime(stamp_list[j][0], '%d-%m-%Y %H:%M:%S.%f')
-            # stamp_mx = 60*time_obj_mx.minute + time_obj_mx.second + time_obj_mx.microsecond / 1e6
-            stamp_mx = time_obj_mx.timestamp()
-            mx_stamps.append(stamp_mx)
-
-            time_obj_sys = datetime.strptime(stamp_list[j][2], '%d-%m-%Y %H:%M:%S.%f')
-            # stamp_sys = 60*time_obj_sys.minute + time_obj_sys.second + time_obj_sys.microsecond / 1e6
-            stamp_sys = time_obj_sys.timestamp()
-            sys_stamps.append(stamp_sys)
-            pleth.append(int(stamp_list[j][3]))
-
-            # print(stamp_mx, stamp_sys)
-
-        return mx_stamps, sys_stamps, pleth
+    return mx_stamps, sys_stamps, data
         
 def find_deltas(sys_stamps, mx_stamps):
     const_num = sys_stamps[0]
@@ -143,7 +131,6 @@ def unroll_stamps2(mx_stamps, batch_size = int(32), time_diff = 0.256):
     
     return np.array(unrolled_stamps)
 
-
 def apply_delta(mx_stamps, sys_mx_time_delta):
     return mx_stamps + sys_mx_time_delta
 
@@ -163,202 +150,123 @@ def timestamp_process(ts):
 
         return temp
 
-def interpolate_ppg_timestamp(sensor_file_name, file_dir_mx800):
-    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
+def interpolate_timestamp(sensor, vital_sign, path):
+    if (sensor == "rgbd" or sensor == "rgb" or sensor == "nir" or sensor == "polarized" or sensor == "thermal" or sensor == "uv" ): # or "audio"
+        filepath_vid = os.path.join(path, sensor + "_local.txt")
 
-    file_dir_rgb =  file_dir_mx800
-    file_dir_mx800 =  file_dir_mx800
+        if (vital_sign == "ppg"):
+            filepath_vs = os.path.join(path, "NOM_PLETHWaveExport.csv")
+        elif(vital_sign == "ecg"):
+            filepath_vs = os.path.join(path, "NOM_ECG_ELEC_POTL_IIWaveExport.csv")
+        else: # hr_ppg, hr_ecg, resp_rate (#TODO: hr_ECG, Blood Pressure, etc..)
+            filepath_vs = os.path.join(path, "MPDataExport.csv")
 
-    #constucting arrays for the data
-    filename = file_dir_mx800 + r"\NOM_PLETHWaveExport.csv"
-    mx_stamps, sys_stamps, ppg = extract_data(input_filepath=filename)
+        print("Interpolating {} signal using {} timestamps".format(vital_sign, sensor) )
 
-    delta_array = find_deltas2(sys_stamps, mx_stamps)
-    sys_mx_time_delta = np.mean(delta_array)
-    mx_unrolled = unroll_stamps2(mx_stamps)
-    ts_ppg = apply_delta(mx_unrolled, sys_mx_time_delta)
-    print("delta_array: {}".format(delta_array) )
-    print(sys_mx_time_delta)
-    print(mx_unrolled)
-    print("ts_ppg: {}".format(ts_ppg) )
+        #constucting arrays for the data
+        mx_stamps, sys_stamps, data = extract_data(filepath_vs, vital_sign)
+        # print("mx_stamps: {}".format(mx_stamps) )
+        # print("sys_stamps: {}".format(sys_stamps) )
+        # print("data: {}".format(data) )
 
-    #loading the time stamp files
-    filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
-    ts_vid = extract_timestamps(filename2)
+        delta_array = find_deltas2(sys_stamps, mx_stamps)
+        sys_mx_time_delta = np.mean(delta_array)
+        # mx_unrolled = unroll_stamps2(mx_stamps)
+        ts_data = apply_delta(mx_stamps, sys_mx_time_delta)
+        # print("delta_array: {}".format(delta_array) )
+        # print(sys_mx_time_delta)
+        # # print(mx_unrolled)    
+        # print("ts_data: {}".format(ts_data) )
 
-    # print(ts_ppg.shape, ts_vid.shape)
-    # print(ts_ppg[0])
-    # print(ts_vid[0])
+        #loading the time stamp files
+        ts_vid = extract_timestamps(filepath_vid)
 
-    ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
-    l1 = len(ts_ppg)
-    l2 = len(ppg)
-    if l1<l2:
-        ppg = ppg[0:l1]
-    elif l2<l1:
-        ts_ppg = ts_ppg[0:l2]
-    # ts_ppg = ts_ppg[0:-1]
+        # print(ts_data.shape, ts_vid.shape)
+        # print(ts_data[0])
+        # print(ts_vid[0])
 
-    ts_ppg_sec = ts_ppg 
-    ts_vid_sec = ts_vid
+        ##CHECK FOR Data AND TS LENGTHS AND CORRECT
+        l1 = len(ts_data)
+        l2 = len(data)
+        if l1<l2:
+            data = data[0:l1]
+        elif l2<l1:
+            ts_data = ts_data[0:l2]
+        # ts_data = ts_data[0:-1]
 
-    #interpolation function
-    f = interpolate.interp1d(ts_ppg_sec,ppg,kind='linear')
+        ts_data_sec = ts_data 
+        ts_vid_sec = ts_vid
 
-    reinterp_ppg = []
+        #interpolation function
+        f = interpolate.interp1d(ts_data_sec,data,kind='linear')
 
-    for t_temp in ts_vid_sec:
-        if t_temp<ts_ppg_sec[0]:
-            reinterp_ppg.append(ppg[0])
-        elif t_temp>ts_ppg_sec[-1]:
-            reinterp_ppg.append(ppg[-1])
-        else:
-            reinterp_ppg.append(f(t_temp))
+        reinterp_data = []
 
-    #write to csv files
+        for t_temp in ts_vid_sec:
+            if t_temp<ts_data_sec[0]:
+                reinterp_data.append(data[0])
+            elif t_temp>ts_data_sec[-1]:
+                reinterp_data.append(data[-1])
+            else:
+                reinterp_data.append(f(t_temp))
 
-    a = np.array(reinterp_ppg)
-    np.savetxt(file_dir_mx800+'/'+"ppg.csv", reinterp_ppg, delimiter=",")
+        #write to csv files
 
-    plt.plot(reinterp_ppg)
-    plt.show()
+        output = np.array(reinterp_data)
+        # filepath_output = os.path.join(path, vital_sign + ".csv")
+        # np.savetxt(filepath_output, reinterp_data, delimiter=",")
 
-def interpolate_hr_timestamp(sensor_file_name, file_dir_mx800):
-    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
+        plt.plot(reinterp_data)
+        plt.show()
+        return output
 
-    file_dir_rgb =  file_dir_mx800
-    file_dir_mx800 =  file_dir_mx800
+def vital_matrix(sensors_list, vital_sign_list, path): # TODO MAYBE data point number mismatch between cameras (900) and audio (1291)
+    num_sensors = len(sensors_list)
+    num_vitals = len(vital_sign_list)
+    num_datapoints = 900
 
-    #constucting arrays for the data
-    filename = file_dir_mx800 + r"\MPDataExport.csv"
-    mx_stamps, sys_stamps, hr = extract_data(input_filepath=filename)
-    print("mx_stamps: {}".format(mx_stamps) )
-    print("sys_stamps: {}".format(sys_stamps) )
-    print("hr: {}".format(hr) )
+    vital_matrix = np.empty((num_sensors, num_datapoints, num_vitals))
 
-    delta_array = find_deltas2(sys_stamps, mx_stamps)
-    sys_mx_time_delta = np.mean(delta_array)
-    # mx_unrolled = unroll_stamps2(mx_stamps)
-    ts_hr = apply_delta(mx_stamps, sys_mx_time_delta)
-    print("delta_array: {}".format(delta_array) )
-    print(sys_mx_time_delta)
-    # print(mx_unrolled)    
-    print("ts_hr: {}".format(ts_hr) )
+    for vital in vital_sign_list:
+        v_idx = vital_sign_list.index(vital)
+        for sensor in sensors_list:
+            s_idx = sensors_list.index(sensor)
+            vital_list = interpolate_timestamp(sensor, vital, path)
+            vital_arr = np.array(vital_list)
+            vital_matrix[s_idx,:,v_idx] = vital_arr
 
-    #loading the time stamp files
-    filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
-    ts_vid = extract_timestamps(filename2)
+    #save numpy vital matrix
+    filepath_output = os.path.join(path, "vital_matrix.npy")
+    np.save(filepath_output, vital_matrix)
 
-    # print(ts_hr.shape, ts_vid.shape)
-    # print(ts_hr[0])
-    # print(ts_vid[0])
+def aslist_cronly(value):
+    if isinstance(value, string_types):
+        value = filter(None, [x.strip() for x in value.splitlines()])
+    return list(value)
 
-    ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
-    l1 = len(ts_hr)
-    l2 = len(hr)
-    if l1<l2:
-        hr = hr[0:l1]
-    elif l2<l1:
-        ts_hr = ts_hr[0:l2]
-    # ts_ppg = ts_ppg[0:-1]
-
-    ts_hr_sec = ts_hr 
-    ts_vid_sec = ts_vid
-
-    #interpolation function
-    f = interpolate.interp1d(ts_hr_sec,hr,kind='linear')
-
-    reinterp_hr = []
-
-    for t_temp in ts_vid_sec:
-        if t_temp<ts_hr_sec[0]:
-            reinterp_hr.append(hr[0])
-        elif t_temp>ts_hr_sec[-1]:
-            reinterp_hr.append(hr[-1])
-        else:
-            reinterp_hr.append(f(t_temp))
-
-    #write to csv files
-
-    a = np.array(reinterp_hr)
-    np.savetxt(file_dir_mx800+'/'+"hr.csv", reinterp_hr, delimiter=",")
-
-    plt.plot(reinterp_hr)
-    plt.show()
-
-def interpolate_timestamp(sensor_file_name, file_dir_mx800):
-    print("Interpolating PPG signal using {} timestamps".format(sensor_file_name) )
-
-    file_dir_rgb =  file_dir_mx800
-    file_dir_mx800 =  file_dir_mx800
-
-    #constucting arrays for the data
-    filename = file_dir_mx800 + r"\MPDataExport.csv"
-    mx_stamps, sys_stamps, hr = extract_data(input_filepath=filename)
-    print("mx_stamps: {}".format(mx_stamps) )
-    print("sys_stamps: {}".format(sys_stamps) )
-    print("hr: {}".format(hr) )
-
-    delta_array = find_deltas2(sys_stamps, mx_stamps)
-    sys_mx_time_delta = np.mean(delta_array)
-    # mx_unrolled = unroll_stamps2(mx_stamps)
-    ts_hr = apply_delta(mx_stamps, sys_mx_time_delta)
-    print("delta_array: {}".format(delta_array) )
-    print(sys_mx_time_delta)
-    # print(mx_unrolled)    
-    print("ts_hr: {}".format(ts_hr) )
-
-    #loading the time stamp files
-    filename2 =  os.path.join(file_dir_rgb, sensor_file_name)
-    ts_vid = extract_timestamps(filename2)
-
-    # print(ts_hr.shape, ts_vid.shape)
-    # print(ts_hr[0])
-    # print(ts_vid[0])
-
-    ##CHECK FOR PPG AND TS LENGTHS AND CORRECT
-    l1 = len(ts_hr)
-    l2 = len(hr)
-    if l1<l2:
-        hr = hr[0:l1]
-    elif l2<l1:
-        ts_hr = ts_hr[0:l2]
-    # ts_ppg = ts_ppg[0:-1]
-
-    ts_hr_sec = ts_hr 
-    ts_vid_sec = ts_vid
-
-    #interpolation function
-    f = interpolate.interp1d(ts_hr_sec,hr,kind='linear')
-
-    reinterp_hr = []
-
-    for t_temp in ts_vid_sec:
-        if t_temp<ts_hr_sec[0]:
-            reinterp_hr.append(hr[0])
-        elif t_temp>ts_hr_sec[-1]:
-            reinterp_hr.append(hr[-1])
-        else:
-            reinterp_hr.append(f(t_temp))
-
-    #write to csv files
-
-    a = np.array(reinterp_hr)
-    np.savetxt(file_dir_mx800+'/'+"hr.csv", reinterp_hr, delimiter=",")
-
-    plt.plot(reinterp_hr)
-    plt.show()
-
-# def ppg_matrix(sensors_list, file_dir_mx800):
-#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
-#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
-#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
-#     interpolate_ppg_timestamp(sensor_file_name="91_1_local.txt", file_dir_mx800=data_folder_name)
-
+def aslist(value, flatten=True):
+    """ Return a list of strings, separating the input based on newlines
+    and, if flatten=True (the default), also split on spaces within
+    each line."""
+    values = aslist_cronly(value)
+    if not flatten:
+        return values
+    result = []
+    for value in values:
+        subvalues = value.split()
+        result.extend(subvalues)
+    return result
 
 if __name__ == '__main__':
-    num = sys.argv[1]
-    data_folder_name = r"F:\IRB data\subject91\91_" + str(num)
+ 
+    datafolder_path = r"E:\mmhealth_data\5_3"
 
-    interpolate_ppg_timestamp(sensor_file_name= "91_" + str(num) + "_local.txt", file_dir_mx800=data_folder_name)
-    interpolate_hr_timestamp(sensor_file_name= "91_" + str(num)+ "_local.txt", file_dir_mx800=data_folder_name)
+    sensors_str = config.get("mmhealth", "sensors_list")
+    sensors_list = aslist(sensors_str, flatten=True)
+
+    vital_sign_str = config.get("mmhealth", "vital_sign_list")
+    vital_sign_list = aslist(vital_sign_str, flatten=True)
+
+    # vital_sign_list = ["ppg", "hr_ppg"]
+
+    vital_matrix(sensors_list, vital_sign_list, datafolder_path)

@@ -25,7 +25,7 @@ class RGBD_Sensor(Sensor):
         self.channels = config.getint("rgbd", "channels") #not settingg
         self.compression = config.getint("rgbd", "compression")
         self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
-        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "rgbd_rgb_calibrate_" )
+        self.calibrate_format = ".png"
         
         # Create a Camera object
         self.zed = sl.Camera()
@@ -72,17 +72,29 @@ class RGBD_Sensor(Sensor):
                     im_arr = self.image.get_data()[:, :, :3]
                     frame = cv2.resize(im_arr, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
                     cv2.imshow('Input', frame)
-                    c = cv2.waitKey(1)
-                    if c == 27:
-                        break
-                    elif cv2.waitKey(1) & 0xFF == ord('s'):
+
+                    key = cv2.waitKey(1)
+                    if key == ord('s'):
                         start_num = 1
-                        while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                        while(os.path.exists(self.filepath + "_" + str(start_num) + self.calibrate_format)):
                             start_num += 1
-                        imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
-                    # elif cv2.waitKey(1) & 0xFF == ord('q'):
-                    #     run = False
+                        imageio.imwrite(self.filepath + "_" + str(start_num) + self.calibrate_format, im_arr)
+                    elif key == ord('q'):
+                        run = False
+                        cv2.destroyAllWindows()
+                        break
+
+                    # c = cv2.waitKey(1)
+                    # if c == 27:
                     #     break
+                    # elif cv2.waitKey(1) & 0xFF == ord('s'):
+                    #     start_num = 1
+                    #     while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                    #         start_num += 1
+                    #     imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                    # # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    # #     run = False
+                    # #     break
         
         else:
             NUM_FRAMES = self.init_params.camera_fps*acquisition_time  # number of images to capture

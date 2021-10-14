@@ -38,7 +38,7 @@ class MX800_Sensor(Sensor):
         pyautogui.press('enter')
         # ...
         time.sleep(self.short_pause)
-        keyboard.write('2')
+        keyboard.write('1')
         pyautogui.press('enter')
         # ...
         time.sleep(self.short_pause)

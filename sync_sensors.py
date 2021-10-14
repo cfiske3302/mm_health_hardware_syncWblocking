@@ -15,6 +15,7 @@ from sensors.rf_sensor import *
 import sensors.sensor
 from postproc.data_interpolation import *
 from postproc.tiff_to_avi import *
+from postproc.check_data import *
 
 def cleanup_mx800(folder_name):
     file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv', 'MPDataExport.csv']
@@ -106,6 +107,23 @@ def progress_main(acquistion_time, folder_name, synchronizer):
         time.sleep(1)
     print("\n")
 
+def aslist_cronly(value):
+    if isinstance(value, string_types):
+        value = filter(None, [x.strip() for x in value.splitlines()])
+    return list(value)
+
+def aslist(value, flatten=True):
+    """ Return a list of strings, separating the input based on newlines
+    and, if flatten=True (the default), also split on spaces within
+    each line."""
+    values = aslist_cronly(value)
+    if not flatten:
+        return values
+    result = []
+    for value in values:
+        subvalues = value.split()
+        result.extend(subvalues)
+    return result
 
 if __name__ == '__main__':
 
@@ -117,17 +135,48 @@ if __name__ == '__main__':
     # sensors_list = [rgbd_main, nir_main, polarized_main, progress_main]  
     # sensors_list = [rgbd_main, nir_main, polarized_main, thermal_main, rf_main, mic_main, mx800_main, progress_main]
     
+    sensors_str = config.get("mmhealth", "sensors_list")
+    sensors_list_str = aslist(sensors_str, flatten=True)
+
+    sensors_list = []
     if(calibrate_mode == 1):
-        sensors_list = [rgbd_main, nir_main, polarized_main, thermal_main]
+        # sensors_list = [nir_main, polarized_main]
+        # sensors_list = [rgbd_main, polarized_main, thermal_main]
+        folder_name = "calibration" + "_"
     else:
-        sensors_list = [nir_main, progress_main]
+        sensors_list = [progress_main]
+        folder_name = str(config.getint("mmhealth", "volunteer_id") ) + "_"
+
+    for sensor in sensors_list_str:
+        if (sensor == "audio"):
+            sensors_list.append(mic_main)
+        elif (sensor == "rgb_audio"):
+            sensors_list.append(webcam_main)
+        elif(sensor == "nir"):
+            sensors_list.append(nir_main)
+        elif(sensor == "polarized"):
+            sensors_list.append(polarized_main)
+        elif(sensor == "rgbd"):
+            sensors_list.append(rgbd_main)
+        elif(sensor == "rgb"):
+            sensors_list.append(rgb_main)
+        elif(sensor == "thermal"):
+            sensors_list.append(thermal_main)
+        elif(sensor == "uv"):
+            sensors_list.append(uv_main)
+        elif(sensor == "rf"):
+            sensors_list.append(rf_main)
+        elif(sensor == "mx800"):
+            sensors_list.append(mx800_main)
+        else:
+            continue
+    
     jobs = []
-    num_sensors = len(sensors_list) #RGB, NIR, Polarized, Webcam Audio, Mic Audio
+    print(sensors_list_str)
+    num_sensors = len(sensors_list_str) + 1 #RGB, NIR, Polarized, Webcam Audio, Mic Audio
     time_acquire = config.getint("mmhealth", "acquire_time") #seconds
     sync_barrior = mp.Barrier(num_sensors)
     #-------------------- Folder Config ---------------------------
-    folder_name = "1"
-    folder_name += "_"
     start_num = 1
     data_folder_name = os.path.join(config.get("mmhealth", "data_path"), folder_name)
 
@@ -149,7 +198,16 @@ if __name__ == '__main__':
     print("Time taken: {}".format(end-start))
     
     #--------------------- Post-Processing ---------------------------
-        # find all tiff files, store their paths in a list
+    print("Cleaning up MX800 files")
+    vital_sign_str = config.get("mmhealth", "vital_sign_list")
+    vital_sign_list = aslist(vital_sign_str, flatten=True)
+    
+    if(sensors_list.count(mx800_main) != 0):
+        cleanup_mx800(data_folder_name)
+        vital_matrix(sensors_list, vital_sign_list, data_folder_name) # interpolate_ppg_timestamp(sensor_file_name="rgbd_local.txt", file_dir_mx800=data_folder_name)
+
+    print("Converting .tiff files to .avi")
+    # find all tiff files, store their paths in a list
     file_list = os.listdir(data_folder_name)
     #for loop, iterate through each filepath and do the conversion
     for file in file_list:
@@ -157,7 +215,6 @@ if __name__ == '__main__':
         ext = os.path.splitext(filename_ext)[1]
         if (ext == ".tiff"):
             tiff_to_avi(os.path.join(data_folder_name, file))
-    
-    if(sensors_list.count(mx800_main) != 0):
-        cleanup_mx800(data_folder_name)
-        interpolate_ppg_timestamp(sensor_file_name="rgbd_local.txt", file_dir_mx800=data_folder_name)
+
+    #--------------------- Check Data ---------------------------
+    check_data_folder(data_folder_name)

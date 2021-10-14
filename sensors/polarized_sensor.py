@@ -23,7 +23,7 @@ class Polarized_Sensor(Sensor):
         self.channels = config.getint("polarized", "channels") 
         self.compression = config.getint("polarized", "compression")
         self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
-        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "polarized_calibrate_" )
+        self.calibrate_format = ".png"
         self.format = ".tiff"
 
         self.system = PySpin.System.GetInstance()
@@ -111,17 +111,29 @@ class Polarized_Sensor(Sensor):
                     im_arr = image_result.GetNDArray()
                     frame = cv2.resize(im_arr, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
                     cv2.imshow('Input', frame)
-                    c = cv2.waitKey(1)
-                    if c == 27:
-                        break
-                    elif cv2.waitKey(1) & 0xFF == ord('s'):
+
+                    key = cv2.waitKey(1)
+                    if key == ord('s'):
                         start_num = 1
-                        while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                        while(os.path.exists(self.filepath + "_" + str(start_num) + self.calibrate_format)):
                             start_num += 1
-                        imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
-                    # elif cv2.waitKey(1) & 0xFF == ord('q'):
-                    #     run = False
+                        imageio.imwrite(self.filepath + "_" + str(start_num) + self.calibrate_format, im_arr)
+                    elif key == ord('q'):
+                        run = False
+                        cv2.destroyAllWindows()
+                        break
+
+                    # c = cv2.waitKey(1)
+                    # if c == 27:
                     #     break
+                    # elif cv2.waitKey(1) & 0xFF == ord('s'):
+                    #     start_num = 1
+                    #     while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                    #         start_num += 1
+                    #     imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im_arr)
+                    # # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    # #     run = False
+                    # #     break
                     image_result.Release()
             self.cam_polar.EndAcquisition()
 

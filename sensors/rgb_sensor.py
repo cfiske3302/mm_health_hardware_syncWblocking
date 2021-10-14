@@ -24,7 +24,7 @@ class RGB_Sensor(Sensor):
         self.channels = config.getint("rgb", "channels") #not setting
         self.compression = config.getint("rgb", "compression")
         self.calibrate_mode = config.getint("mmhealth", "calibration_mode") 
-        self.calibrate_filepath = os.path.join(config.get("mmhealth", "data_path"), "rgb_calibrate_" )
+        self.calibrate_format = ".png"
 
         self.counter = 0
 
@@ -41,16 +41,28 @@ class RGB_Sensor(Sensor):
             for im in self.reader:
                 frame = cv2.resize(im, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
                 cv2.imshow('Input', frame)
-                c = cv2.waitKey(1)
-                if c == 27:
-                    break
-                elif cv2.waitKey(1) & 0xFF == ord('s'):
+
+                key = cv2.waitKey(1)
+                if key == ord('s'):
                     start_num = 1
-                    while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                    while(os.path.exists(self.filepath + "_" + str(start_num) + self.calibrate_format)):
                         start_num += 1
-                    imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im)
-                # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                    imageio.imwrite(self.filepath + "_" + str(start_num) + self.calibrate_format, im)
+                elif key == ord('q'):
+                    run = False
+                    cv2.destroyAllWindows()
+                    break
+
+                # c = cv2.waitKey(1)
+                # if c == 27:
                 #     break
+                # elif cv2.waitKey(1) & 0xFF == ord('s'):
+                #     start_num = 1
+                #     while(os.path.exists(self.calibrate_filepath + str(start_num) + ".png")):
+                #         start_num += 1
+                #     imageio.imwrite(self.calibrate_filepath + str(start_num) + ".png", im)
+                # # elif cv2.waitKey(1) & 0xFF == ord('q'):
+                # #     break
         
         else:
             NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
@@ -65,6 +77,7 @@ class RGB_Sensor(Sensor):
                             self.counter += 1
                     else:
                         frames[self.counter] = im # Reads 3 channels, but each channel is identical (same pixel info)
+                        self.record_timestamp()
                         self.counter += 1
                 else:
                     break
