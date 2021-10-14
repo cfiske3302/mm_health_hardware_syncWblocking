@@ -18,9 +18,10 @@ from postproc.tiff_to_avi import *
 from postproc.check_data import *
 
 def cleanup_mx800(folder_name):
-    file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv', 'MPDataExport.csv']
+    file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv', 'MPDataExport.csv', 'NOM_RESPWaveExport.csv']
     for file in file_list:
-        shutil.move(file, os.path.join(folder_name, file)) #os.replace cannot copy files across drives
+        if (os.path.isfile('file')): # if file exists
+            shutil.move(file, os.path.join(folder_name, file)) #os.replace cannot copy files across drives
         # os.remove(file)
 
 wait_time = 3 #MX800 wait time to ensure that it begins recording before any sensor does.

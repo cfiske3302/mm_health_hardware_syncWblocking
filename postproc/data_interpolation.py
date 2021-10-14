@@ -158,6 +158,8 @@ def interpolate_timestamp(sensor, vital_sign, path):
             filepath_vs = os.path.join(path, "NOM_PLETHWaveExport.csv")
         elif(vital_sign == "ecg"):
             filepath_vs = os.path.join(path, "NOM_ECG_ELEC_POTL_IIWaveExport.csv")
+        elif(vital_sign == "resp"):
+            filepath_vs = os.path.join(path, "NOM_RESPWaveExport.csv")
         else: # hr_ppg, hr_ecg, resp_rate (#TODO: hr_ECG, Blood Pressure, etc..)
             filepath_vs = os.path.join(path, "MPDataExport.csv")
 
