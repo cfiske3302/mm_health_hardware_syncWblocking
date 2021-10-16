@@ -9,7 +9,7 @@ from config import *
 class Sensor(abc.ABC):
 
     @abc.abstractmethod
-    def __init__(self, filename : str, foldername : str = "data"):
+    def __init__(self, filename : str, foldername : str = "individual_sensor_test"):
         self.folder = foldername
         self.filename = filename
         self.filepath = os.path.join(config.get("mmhealth", "data_path"), foldername, filename)

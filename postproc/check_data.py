@@ -7,11 +7,69 @@ import sys
 sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
 from config import *
 
-video_ids = ["nir", "thermal", "polarized", "rgbd"] # "rgb", "uv"
 health_ids = ["ppg.csv"]
 mic_ids = ["mic", "webcam"]
 
-def get_data(video_path):
+def aslist_cronly(value):
+    if isinstance(value, string_types):
+        value = filter(None, [x.strip() for x in value.splitlines()])
+    return list(value)
+
+def aslist(value, flatten=True):
+    """ Return a list of strings, separating the input based on newlines
+    and, if flatten=True (the default), also split on spaces within
+    each line."""
+    values = aslist_cronly(value)
+    if not flatten:
+        return values
+    result = []
+    for value in values:
+        subvalues = value.split()
+        result.extend(subvalues)
+    return result
+
+def get_sensor_files_list(file_path, sensor):
+    sensor_files_list = []
+    if (sensor == "rgb" or sensor == "thermal" or sensor == "uv" or sensor == "nir" or sensor == "polarized"):
+        sensor_files_list.append(os.path.join(file_path, sensor + ".tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
+        if (config.getint("mmhealth", "tiff_to_avi") == 1):
+            sensor_files_list.append(os.path.join(file_path, sensor + "_avi.avi") )
+
+    elif (sensor == "rgbd"):
+        sensor_files_list.append(os.path.join(file_path, sensor + "_rgb.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_depth.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
+        if (config.getint("mmhealth", "tiff_to_avi") == 1):
+            sensor_files_list.append(os.path.join(file_path, sensor + "_rgb_avi.avi") )
+            sensor_files_list.append(os.path.join(file_path, sensor + "_depth_avi.avi") )
+
+    elif (sensor == "rf"):
+        sensor_files_list.append(os.path.join(file_path, sensor + ".pkl") )
+        sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
+        if (config.getint("mmhealth", "read_rf_pkl") == 1):
+            sensor_files_list.append(os.path.join(file_path, sensor + "_read.pkl") )
+
+    elif (sensor == "audio"):
+        sensor_files_list.append(os.path.join(file_path, sensor + ".wav") )
+        sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
+
+    elif (sensor == "mx800"):
+        sensor_files_list.append(os.path.join(file_path, "NOM_ECG_ELEC_POTL_IIWaveExport.csv") )
+        sensor_files_list.append(os.path.join(file_path, "NOM_PLETHWaveExport.csv") )
+        sensor_files_list.append(os.path.join(file_path, "NOM_RESPWaveExport.csv") ) 
+        sensor_files_list.append(os.path.join(file_path, "MPDataExport.csv") )
+        sensor_files_list.append(os.path.join(file_path, "MPrawoutput.txt") )
+
+    return sensor_files_list
+        # if (config.getint("mmhealth", "read_rf_pkl") == 1):
+
+
+def get_img_stats(video_path):
     imarray = imageio.volread(video_path)
     #sample 20 frames
     num_frames = imarray.shape[0]
@@ -85,39 +143,46 @@ def compare_config(sensors_dict): # compare against input config (avg_pixel_delt
         print("No Warnings Detected!")
 
 
-def check_distance(sensors_dict): #TODO use rgbd data to confirm range measurement from rf
+def check_files_exist(sensors_dict): #TODO use rgbd data to confirm range measurement from rf
     pass
 
 def check_data_folder(dir_path):
+    sensors_str = config.get("mmhealth", "sensors_list")
+    sensors_list_str = aslist(sensors_str, flatten=True)
+    cameras = sensors_list_str
+
+    for sensor in cameras:
+        if (sensor != "rgbd" and  sensor != "rgb" and sensor != "polarized" and  sensor != "nir" and sensor != "thermal" and  sensor != "uv"):
+            cameras.remove(sensor)
+
     file_list = os.listdir(dir_path)
     sensors_dict = {}
 
     for file in file_list:
         #check video files
-        for video in video_ids:
+        for video in cameras:
             if video in file:
                 if ".tiff" in file:
                     # print(file)
                     # print("video {} stats:".format(video))
-                    data = get_data(os.path.join(dir_path, file))
+                    data = get_img_stats(os.path.join(dir_path, file))
                     sensors_dict.update({video: data})
 
-        #check audio files
-        for mic in mic_ids:
-            if mic in file:
-                if ".wave" in file:
-                    pass
-                    # print("audio", file)
-        #check mx800 files
-        for health in health_ids:
-            if health in file:
+    for sensor in sensors_list_str:
+        sensor_files_list = get_sensor_files_list(sensor)
+        for file in sensor_files_list:
+            if(os.path.isfile(file)):
                 pass
-                # print("health", file)
-
+            else:
+                filename_ext = os.path.basename(file)
+                print("WARNING: File {} does not exist in Path {}".format(  filename_ext, file) )
+            
     print("Comparing against config parameters:")
     compare_config(sensors_dict)
     # print("Comparing sensor start and end times:")
     # compare_sensor_times(sensors_dict)
 
 if __name__ == '__main__':
+
+
     check_data_folder(r"E:\mmhealth_data\1_3")

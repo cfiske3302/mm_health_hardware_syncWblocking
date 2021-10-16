@@ -11,7 +11,7 @@ from sensor import Sensor
 
 class UV_Sensor(Sensor):
 
-    def __init__(self, filename : str, foldername : str = "data"):
+    def __init__(self, filename : str, foldername : str = "individual_sensor_test"):
         super().__init__(filename=filename, foldername=foldername)
 
         self.sensor_type = "uv_camera"

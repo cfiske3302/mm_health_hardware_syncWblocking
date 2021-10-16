@@ -11,7 +11,7 @@ audio = pyaudio.PyAudio()
 
 class Audio_Sensor(Sensor):
 
-    def __init__(self, filename : str, foldername : str = "data"):
+    def __init__(self, filename : str, foldername : str = "individual_sensor_test"):
         super().__init__(filename=filename, foldername=foldername)
         
         #set parameters for audio recorder

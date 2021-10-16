@@ -26,9 +26,9 @@ COM_PORT = 3
 RADARSS_PATH = "C:\\ti\\mmwave_studio_02_01_01_00\\rf_eval_firmware\\radarss\\xwr12xx_xwr14xx_radarss.bin"
 MASTERSS_PATH = "C:\\ti\\mmwave_studio_02_01_01_00\\rf_eval_firmware\\masterss\\xwr12xx_xwr14xx_masterss.bin"
 -- SAVE_DATA_PATH = "C:\\ti\\mmwave_studio_02_00_00_02\\mmWaveStudio\\PostProc\\adc_data.bin"
-SAVE_DATA_PATH = "C:\\Users\\111\\Documents\\mmhealth_features\\mmhealth_master\\sensors\\data\\adc_data.bin"
-DUMP_DATA_PATH = "C:\\Users\\111\\Documents\\mmhealth_features\\mmhealth_master\\sensors\\data\\adc_data_RAW_0.bin"
-PKT_LOG_PATH  = "C:\\Users\\111\\Documents\\mmhealth_features\\mmhealth_master\\sensors\\data\\pktlogfile.txt"
+SAVE_DATA_PATH = "C:\\Temp\\mmhealth_rf_dump\\adc_data.bin"
+-- DUMP_DATA_PATH = "C:\\Users\\111\\Documents\\mmhealth_features\\mmhealth_master\\sensors\\data\\adc_data_RAW_0.bin"
+-- PKT_LOG_PATH  = "C:\\Users\\111\\Documents\\mmhealth_features\\mmhealth_master\\sensors\\data\\pktlogfile.txt"
 --------------------------------------------
 
 -------- VERY IMPORTANT AND SERIOUS RADAR SETTINGS --------
@@ -116,6 +116,8 @@ ar1.CaptureCardConfig_PacketDelay(25)
 -------- https://www.google.com/search?q=everything+is+fine+meme+spongebob&rlz=1C1CHBF_enUS794US794&source=lnms&tbm=isch&sa=X&ved=0ahUKEwiBk7vfw9DjAhWVG80KHTdsDnoQ_AUIESgB&biw=1536&bih=722#imgrc=7BHtSeLSvvNceM: --------
 ar1.CaptureCardConfig_StartRecord(SAVE_DATA_PATH, 1)
 ar1.StartFrame()
+-- RSTD.Sleep(5000)
+-- ar1.StopFrame()
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
 
 -------- CALCULATED AND NOT TOO SERIOUS PARAMETERS --------
@@ -127,10 +129,6 @@ MAX_RANGE = (300 * 0.9 * SAMPLE_RATE) / (2 * FREQ_SLOPE * 1e3)
 DOPPLER_RESOLUTION = 3e8 / (2 * START_FREQ * 1e9 * (IDLE_TIME + RAMP_END_TIME) * 1e-6 * NUM_DOPPLER_BINS * NUM_TX)
 MAX_DOPPLER = 3e8 / (4 * START_FREQ * 1e9 * (IDLE_TIME + RAMP_END_TIME) * 1e-6 * NUM_TX)
 
-print("\n\nI wanted to make the outputted parameters easy to find so I put them inbetween two memes:")
-print("https://www.google.com/search?q=the+nerd+life+chose+me+meme&rlz=1C1CHBF_enUS794US794&source=lnms&tbm=isch&sa=X&ved=0ahUKEwiEg_zw09DjAhVRCM0KHVgfC3cQ_AUIESgB&biw=1536&bih=722#imgrc=EW0Rq0cJqCXu6M:\n")
-
-
 print("Chirps Per Frame:", CHIRPS_PER_FRAME)
 print("Num Doppler Bins:", NUM_DOPPLER_BINS)
 print("Num Range Bins:", NUM_RANGE_BINS)
@@ -139,11 +137,9 @@ print("Max Unambiguous Range:", MAX_RANGE)
 print("Doppler Resolution:", DOPPLER_RESOLUTION)
 print("Max Doppler:", MAX_DOPPLER)
 
-print("\nhttps://inteng-storage.s3.amazonaws.com/images/JANUARY/sizes/memes_about_engineers_before_after_resize_md.jpg\n\n")
-
 -- Post Processing will only be done if scan is NOT realtime
-if NUM_FRAMES ~= 0 then
-    RSTD.Sleep(2000)
-    ar1.PacketReorderZeroFill(DUMP_DATA_PATH, SAVE_DATA_PATH, PKT_LOG_PATH)
-end
+-- if NUM_FRAMES ~= 0 then
+--     RSTD.Sleep(2000)
+--     ar1.PacketReorderZeroFill(DUMP_DATA_PATH, SAVE_DATA_PATH, PKT_LOG_PATH)
+-- end
 -----------------------------------------------

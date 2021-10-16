@@ -1,5 +1,7 @@
 import multiprocessing as mp
 import time
+import pickle
+from natsort import natsorted, ns
 from progressbar import progressbar
 
 from sensors.config import *
@@ -16,6 +18,7 @@ import sensors.sensor
 from postproc.data_interpolation import *
 from postproc.tiff_to_avi import *
 from postproc.check_data import *
+import sensors.rf_UDP.organizer_copy as org
 
 def cleanup_mx800(folder_name):
     file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv', 'MPDataExport.csv', 'NOM_RESPWaveExport.csv']
@@ -23,6 +26,44 @@ def cleanup_mx800(folder_name):
         if (os.path.isfile('file')): # if file exists
             shutil.move(file, os.path.join(folder_name, file)) #os.replace cannot copy files across drives
         # os.remove(file)
+
+def cleanup_rf():
+    rf_dump_path = r"C:\Temp\mmhealth_rf_dump"
+    file_list = os.listdir(rf_dump_path)
+    file_list_sorted = natsorted(file_list, key=lambda y: y.lower())
+    file_list_sorted = file_list_sorted[1:] # remove adc_data_LogFile.txt from list 
+    file_list_sorted = file_list_sorted[:-1] # remove adc_data_Raw_LogFile.csv from list
+    file_time = []
+
+    for file in file_list_sorted:
+        file_path = os.path.join(rf_dump_path, file)
+        file_time.append(os.path.getctime(file_path) )
+
+    file_time_arr = np.array(file_time)
+    file_time_sorted = np.sort(file_time_arr)
+    value = file_time_sorted[-1]
+    idx, = np.where(file_time_arr == value)
+    idx = idx[0]
+    file_list_sorted = file_list_sorted[:idx] + file_list_sorted[idx+1:]
+
+    for file in file_list_sorted:
+        os.remove(os.path.join(rf_dump_path, file))
+
+def read_pickle_rf(folder_name):
+    file_list = os.listdir(folder_name)
+    for file in file_list:
+        filename_ext = os.path.basename(file)
+        filename, ext = os.path.splitext(filename_ext)
+        if (ext == ".pkl"):
+            f = open(os.path.join(folder_name , filename_ext),'rb')
+            s = pickle.load(f)
+            o = org.Organizer(s, 1, 4, 3, 512)
+            frames = o.organize()
+            print("Shape of RF pickle file: {}".format(frames.shape) )
+            to_save = {'frames':frames, 'start_time':s[3], 'end_time':s[4], 'num_frames':len(frames)}
+            with open(os.path.join(folder_name , filename + '_read.pkl'), 'wb') as f:
+                pickle.dump(to_save, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
 
 wait_time = 3 #MX800 wait time to ensure that it begins recording before any sensor does.
 calibrate_mode = config.getint("mmhealth", "calibration_mode") 
@@ -199,23 +240,30 @@ if __name__ == '__main__':
     print("Time taken: {}".format(end-start))
     
     #--------------------- Post-Processing ---------------------------
-    print("Cleaning up MX800 files")
-    vital_sign_str = config.get("mmhealth", "vital_sign_list")
-    vital_sign_list = aslist(vital_sign_str, flatten=True)
-    
+
     if(sensors_list.count(mx800_main) != 0):
+        print("Cleaning up MX800 files")
+        vital_sign_str = config.get("mmhealth", "vital_sign_list")
+        vital_sign_list = aslist(vital_sign_str, flatten=True)
+
         cleanup_mx800(data_folder_name)
         vital_matrix(sensors_list, vital_sign_list, data_folder_name) # interpolate_ppg_timestamp(sensor_file_name="rgbd_local.txt", file_dir_mx800=data_folder_name)
 
-    print("Converting .tiff files to .avi")
-    # find all tiff files, store their paths in a list
-    file_list = os.listdir(data_folder_name)
-    #for loop, iterate through each filepath and do the conversion
-    for file in file_list:
-        filename_ext = os.path.basename(file)
-        ext = os.path.splitext(filename_ext)[1]
-        if (ext == ".tiff"):
-            tiff_to_avi(os.path.join(data_folder_name, file))
+    print("Cleaning up RF dump files")
+    cleanup_rf()
+
+    if (config.getint("mmhealth", "read_rf_pkl") == 1):
+        print("Reading RF pickle files")
+        read_pickle_rf(data_folder_name)
+    
+    if (config.getint("mmhealth", "tiff_to_avi") == 1):
+        print("Converting .tiff files to .avi")
+        file_list = os.listdir(data_folder_name)
+        for file in file_list:
+            filename_ext = os.path.basename(file)
+            ext = os.path.splitext(filename_ext)[1]
+            if (ext == ".tiff"):
+                tiff_to_avi(os.path.join(data_folder_name, file))
 
     #--------------------- Check Data ---------------------------
     check_data_folder(data_folder_name)
