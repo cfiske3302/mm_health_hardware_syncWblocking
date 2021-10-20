@@ -5,6 +5,7 @@ import imageio
 import cv2
 import sys
 
+sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
 from config import *
 
 # input_filepath = str(sys.argv[1])
@@ -32,44 +33,53 @@ def tiff_to_avi(input_filepath):
     # elif(sensor_type == "au"):
     #     sensor_type = "audio"
 
-    width = config.getint(sensor_type, "width") 
-    height = config.getint(sensor_type, "height") 
+    width = config.getint(sensor_type, "width")
+    height = config.getint(sensor_type, "height")
     fps = config.getint("mmhealth", "fps")
 
     imarray = imageio.volread(input_filepath) 
     imarray = imarray.astype("uint8")
-    # imarray = imarray.astype("uint8") #uint8
     NUM_FRAMES = imarray.shape[0]
 
     if(NUM_FRAMES == 1):
         frame = imarray[0]
         output_filepath = os.path.join(path, filename + ".jpeg")
-        if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
-            frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-            cv2.imwrite(output_filepath, frame.astype(np.uint8))
-        else:
-            cv2.imwrite(output_filepath, frame.astype(np.uint8))
+        imageio.imwrite(output_filepath, frame.astype(np.uint8))
     else:
         output_filepath = os.path.join(path, filename + "_avi.avi")
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video = cv2.VideoWriter(output_filepath, fourcc, fps, (width, height))
-        if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
-            for i in range (NUM_FRAMES):
-                frame = imarray[i]
-                frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-                video.write(frame)
-            video.release()   
-        else:
-            for i in range (NUM_FRAMES):
-                frame = imarray[i]
-                video.write(frame)
-            video.release()        
+        imageio.mimwrite(output_filepath, imarray, fps = fps)
+
+    # if(NUM_FRAMES == 1):
+    #     frame = imarray[0]
+    #     output_filepath = os.path.join(path, filename + ".jpeg")
+    #     if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
+    #         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+    #         cv2.imwrite(output_filepath, frame.astype(np.uint8))
+    #     else:
+    #         cv2.imwrite(output_filepath, frame.astype(np.uint8))
+    # else:
+    #     output_filepath = os.path.join(path, filename + "_avi.avi")
+    #     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    #     video = cv2.VideoWriter(output_filepath, fourcc, fps, (width, height))
+    #     if (sensor_type == "nir" or sensor_type == "polarized" or sensor_type == "thermal"):
+    #         imageio.mimwrite(output_filepath, imarray, fps = fps)  
+    #     else:
+    #         for i in range (NUM_FRAMES):
+    #             frame = imarray[i]
+    #             video.write(frame)
+    #         video.release()          
     
     print("Tiff to Avi Conversion: Sensor {} done! Shape: {}".format(sensor_type, imarray.shape) )
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    input_filepath = "C:\Temp\mmhealth_data\testing6\polarized_1.tiff"
+    input_filepath = r"E:\mmhealth_data\individual_sensor_test\polarized_1_0.tiff"
+    tiff_to_avi(input_filepath)
+    input_filepath = r"E:\mmhealth_data\individual_sensor_test\polarized_1_45.tiff"
+    tiff_to_avi(input_filepath)
+    input_filepath = r"E:\mmhealth_data\individual_sensor_test\polarized_1_90.tiff"
+    tiff_to_avi(input_filepath)
+    input_filepath = r"E:\mmhealth_data\individual_sensor_test\polarized_1_135.tiff"
     tiff_to_avi(input_filepath)
     
 # im = Image.open(filename)

@@ -3,6 +3,7 @@ from sensors.config import *
 import pickle
 import os
 from natsort import natsorted, ns
+import imageio
 import numpy as np
 
 # def read_pickle_rf(folder_name):
@@ -75,4 +76,33 @@ def cleanup_rf():
     for file in file_list_sorted:
         os.remove(os.path.join(rf_dump_path, file))
 
-cleanup_rf()
+
+def check_polarized_arrays():
+    input_filepath_0 = r"E:\mmhealth_data\individual_sensor_test\polarized_1_0.tiff"
+    input_filepath_45 = r"E:\mmhealth_data\individual_sensor_test\polarized_1_45.tiff"
+    input_filepath_90 = r"E:\mmhealth_data\individual_sensor_test\polarized_1_90.tiff"
+    input_filepath_135 = r"E:\mmhealth_data\individual_sensor_test\polarized_1_135.tiff"
+
+    imarray_0 = imageio.volread(input_filepath_0) 
+    imarray_0 = imarray_0.astype("uint8")
+    imarray_45 = imageio.volread(input_filepath_45) 
+    imarray_45 = imarray_45.astype("uint8")
+    imarray_90 = imageio.volread(input_filepath_90) 
+    imarray_90 = imarray_90.astype("uint8")
+    imarray_135 = imageio.volread(input_filepath_135) 
+    imarray_135 = imarray_135.astype("uint8")
+
+    if (np.array_equal(imarray_0, imarray_45, equal_nan=False) ):
+        print("0 and 45 arrays equal")
+    if (np.array_equal(imarray_0, imarray_90, equal_nan=False) ):
+        print("0 and 90 arrays equal")
+    if (np.array_equal(imarray_0, imarray_135, equal_nan=False) ):
+        print("0 and 135 arrays equal")
+    if (np.array_equal(imarray_45, imarray_90, equal_nan=False) ):
+        print("45 and 90 arrays equal")
+    if (np.array_equal(imarray_45, imarray_135, equal_nan=False) ):
+        print("45 and 135 arrays equal")
+    if (np.array_equal(imarray_90, imarray_135, equal_nan=False) ):
+        print("90 and 135 arrays equal")
+
+check_polarized_arrays()

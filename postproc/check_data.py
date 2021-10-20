@@ -2,6 +2,7 @@
 import os
 import imageio
 import numpy as np
+from six import string_types
 
 import sys
 sys.path.insert(0, r"C:\Users\111\Desktop\mmhealth_2\sensors")
@@ -30,13 +31,26 @@ def aslist(value, flatten=True):
 
 def get_sensor_files_list(file_path, sensor):
     sensor_files_list = []
-    if (sensor == "rgb" or sensor == "thermal" or sensor == "uv" or sensor == "nir" or sensor == "polarized"):
+    if (sensor == "rgb" or sensor == "thermal" or sensor == "uv" or sensor == "nir"):
         sensor_files_list.append(os.path.join(file_path, sensor + ".tiff") )
         sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
         sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
         if (config.getint("mmhealth", "tiff_to_avi") == 1):
             sensor_files_list.append(os.path.join(file_path, sensor + "_avi.avi") )
 
+    elif (sensor == "polarized"):
+        sensor_files_list.append(os.path.join(file_path, sensor + "_0.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_45.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_90.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_135.tiff") )
+        sensor_files_list.append(os.path.join(file_path, sensor + ".txt") )
+        sensor_files_list.append(os.path.join(file_path, sensor + "_local.txt") )
+        if (config.getint("mmhealth", "tiff_to_avi") == 1):
+            sensor_files_list.append(os.path.join(file_path, sensor + "_0_avi.avi") )
+            sensor_files_list.append(os.path.join(file_path, sensor + "_45_avi.avi") )
+            sensor_files_list.append(os.path.join(file_path, sensor + "_90_avi.avi") )
+            sensor_files_list.append(os.path.join(file_path, sensor + "_135_avi.avi") )
+    
     elif (sensor == "rgbd"):
         sensor_files_list.append(os.path.join(file_path, sensor + "_rgb.tiff") )
         sensor_files_list.append(os.path.join(file_path, sensor + "_depth.tiff") )
@@ -82,6 +96,8 @@ def get_img_stats(video_path):
     filename = os.path.splitext(filename_ext)[0]
     if( (filename == "rgbd_depth") or (filename == "rgbd_rgb") ):
         time_stamp_file = os.path.join(path, "rgbd_local.txt")
+    elif( (filename == "polarized_0") or (filename == "polarized_45") or (filename == "polarized_90") or (filename == "polarized_135") ):
+        time_stamp_file = os.path.join(path, "polarized_local.txt")
     else:
         time_stamp_file = os.path.splitext(video_path)[0] + "_local.txt"
     # print(time_stamp_file)
@@ -169,7 +185,7 @@ def check_data_folder(dir_path):
                     sensors_dict.update({video: data})
 
     for sensor in sensors_list_str:
-        sensor_files_list = get_sensor_files_list(sensor)
+        sensor_files_list = get_sensor_files_list(dir_path, sensor)
         for file in sensor_files_list:
             if(os.path.isfile(file)):
                 pass
@@ -185,4 +201,4 @@ def check_data_folder(dir_path):
 if __name__ == '__main__':
 
 
-    check_data_folder(r"E:\mmhealth_data\1_3")
+    check_data_folder(r"E:\mmhealth_data\5_13")
