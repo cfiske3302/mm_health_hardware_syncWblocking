@@ -42,16 +42,16 @@ namespace VSCaptureMP
 
         static void Main(string[] args)
         {
-            Console.WriteLine("VitalSignsCaptureMP MIB (C)2017-21 John George K.");
+            /*Console.WriteLine("VitalSignsCaptureMP MIB (C)2017-21 John George K.");
             Console.WriteLine("For command line usage: -help");
-            Console.WriteLine();
+            Console.WriteLine();*/
 
             var parser = new CommandLineParser();
             parser.Parse(args);
 
             if (parser.Arguments.ContainsKey("help"))
             {
-                Console.WriteLine("VSCaptureMP.exe -mode[number] -port [portname] -interval [number]");
+                /*Console.WriteLine("VSCaptureMP.exe -mode[number] -port [portname] -interval [number]");
                 Console.WriteLine(" -waveset[number] -export[number] -devid[name] -url [name] -scale[number]");
                 Console.WriteLine("-mode <Set connection mode MIB or LAN>");
                 Console.WriteLine("-port <Set IP address or serial port>");
@@ -65,7 +65,7 @@ namespace VSCaptureMP
                 Console.WriteLine("-passw <Set password for MQTT export>");
                 Console.WriteLine("-scale <Set waveform data scale or calibrate option>");
 
-                Console.WriteLine();
+                Console.WriteLine();*/
                 return;
             }
 
@@ -76,13 +76,14 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine();
+                /*Console.WriteLine("C# Initializing");*/
+                /*Console.WriteLine();
                 Console.WriteLine("1. Connect via MIB RS232 port");
                 Console.WriteLine("2. Connect via LAN port");
                 Console.WriteLine();
-                Console.Write("Choose connection mode (1-2):");
+                Console.Write("Choose connection mode (1-2):");*/
 
-                sConnectset = Console.ReadLine();
+                sConnectset = "2";
 
             }
 
@@ -92,14 +93,17 @@ namespace VSCaptureMP
             if (nConnectset == 1) ConnectviaMIB(args);
             else if (nConnectset == 2) ConnectviaLAN(args);
             
-            ConsoleKeyInfo cki;
+            // ConsoleKeyInfo cki;
+            int value = 0;
 
             do
             {
-                cki = Console.ReadKey(true);
+                // cki = Console.ReadKey(true);
+                value = Console.Read();
                
             }
-            while (cki.Key != ConsoleKey.Escape);
+            // while (cki.Key != ConsoleKey.Escape);
+            while (value != 27);
 
         }
 
@@ -185,7 +189,7 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine("You may connect an Ethernet cable to the Philips Intellivue monitor LAN port");
+                /*Console.WriteLine("You may connect an Ethernet cable to the Philips Intellivue monitor LAN port");
                 Console.WriteLine("Note the IP address from the Network Status menu in the monitor");
 
                 Console.WriteLine();
@@ -197,9 +201,9 @@ namespace VSCaptureMP
                 Console.WriteLine("5. Single poll");
 
                 Console.WriteLine();
-                Console.Write("Choose Data Transmission interval (1-5):");
+                Console.Write("Choose Data Transmission interval (1-5):");*/
 
-                sIntervalset = Console.ReadLine();
+                sIntervalset = "1";
 
             }
 
@@ -216,15 +220,15 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine();
+                /*Console.WriteLine();
                 Console.WriteLine("Data export options:");
                 Console.WriteLine("1. Export as CSV files");
                 Console.WriteLine("2. Export as CSV files and JSON to URL");
                 Console.WriteLine("3. Export as MQTT to URL");
                 Console.WriteLine();
-                Console.Write("Choose data export option (1-3):");
+                Console.Write("Choose data export option (1-3):");*/
 
-                sDataExportset = Console.ReadLine();
+                sDataExportset = "1";
 
             }
 
@@ -335,7 +339,7 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine();
+                /*Console.WriteLine();
                 Console.WriteLine("Waveform data export options:");
                 Console.WriteLine("0. None");
                 Console.WriteLine("1. ECG I, II, III");
@@ -351,9 +355,9 @@ namespace VSCaptureMP
 
                 Console.WriteLine();
                 Console.WriteLine("Selecting all waves can lead to data loss due to bandwidth issues");
-                Console.Write("Choose Waveform data export priority option (0-10):");
+                Console.Write("Choose Waveform data export priority option (0-10):");*/
 
-                sWaveformSet = Console.ReadLine();
+                sWaveformSet = "2";
 
             }
 
@@ -367,14 +371,14 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine();
+                /*Console.WriteLine();
                 Console.WriteLine("Waveform data export scale and calibrate options:");
                 Console.WriteLine("1. Export scaled values");
                 Console.WriteLine("2. Export calibrated values");
                 Console.WriteLine();
-                Console.Write("Choose Waveform data export scale option (1-2):");
+                Console.Write("Choose Waveform data export scale option (1-2):");*/
 
-                sWavescaleSet = Console.ReadLine();
+                sWavescaleSet = "1";
 
             }
 
@@ -391,20 +395,40 @@ namespace VSCaptureMP
             }
             else
             {
-                Console.WriteLine();
-                Console.WriteLine("Enter the target IP address of the monitor assigned by DHCP:");
+                /*Console.WriteLine();
+                Console.WriteLine("Enter the target IP address of the monitor assigned by DHCP:");*/
 
-                IPAddressRemote = Console.ReadLine();
+                IPAddressRemote = "169.254.150.16";
+
+                /*Console.WriteLine("C# Initialization Done");*/
+
+                int start_value = 0;
+                do
+                {
+                    start_value = Console.Read();
+                    if (start_value == 32) break;
+                }
+                while (start_value != 32);
+
+               /* Console.WriteLine("C# Begin Recording");*/
+
+                /*                string start;
+                                do
+                                {
+                                    start = Console.ReadLine();
+                                    if (start == "start") break;
+                                }
+                                while (start != "start");*/
 
             }
 
-            Console.WriteLine("Connecting to {0}...", IPAddressRemote);
+            /*Console.WriteLine("Connecting to {0}...", IPAddressRemote);
             Console.WriteLine();
             Console.WriteLine("Requesting Transmission set {0} from monitor", nIntervalset);
             Console.WriteLine();
             Console.WriteLine("Data will be written to CSV file MPDataExport.csv in same folder");
             Console.WriteLine();
-            Console.WriteLine("Press Escape button to Stop");
+            Console.WriteLine("Press Escape button to Stop");*/
 
             if (nDataExportset > 0 && nDataExportset < 4) _MPudpclient.m_dataexportset = nDataExportset;
 
@@ -424,6 +448,14 @@ namespace VSCaptureMP
                 _MPudpclient.m_MQTTtopic = MQTTtopic;
                 _MPudpclient.m_MQTTuser = MQTTuser;
                 _MPudpclient.m_MQTTpassw = MQTTpassw;
+
+/*                int start_value = 0;
+                do
+                {
+                    start_value = Console.Read();
+                    if (start_value == 32) break;
+                }
+                while (start_value != 32);*/
 
 
                 try
@@ -454,6 +486,14 @@ namespace VSCaptureMP
                     //Send PollDataRequest message
                     //_MPudpclient.SendPollDataRequest();
 
+/*                    int start_value = 0;
+                    do
+                    {
+                        start_value = Console.Read();
+                        if (start_value == 32) break;
+                    }
+                    while (start_value != 32);*/
+
                     //Send Extended PollData Requests cycled every second
                     Task.Run(() => _MPudpclient.SendCycledExtendedPollDataRequest(nInterval));
 
@@ -469,6 +509,14 @@ namespace VSCaptureMP
 
                         Task.Run(() => _MPudpclient.SendCycledExtendedPollWaveDataRequest(nInterval));
                     }
+
+/*                    int start_value = 0;
+                    do
+                    {
+                        start_value = Console.Read();
+                        if (start_value == 32) break;
+                    }
+                    while (start_value != 32);*/
 
                     //Recheck MDS Attributes
                     Task.Run(() => _MPudpclient.RecheckMDSAttributes(nInterval));
@@ -492,8 +540,6 @@ namespace VSCaptureMP
             {
                 Console.WriteLine("Invalid IP Address");
             }
-
-
 
         }
         public static void ConnectviaMIB(string[] args)
@@ -821,13 +867,21 @@ namespace VSCaptureMP
 
                 if (!_serialPort.OSIsUnix())
                 {
-                    ConsoleKeyInfo cki;
+                    /*                    ConsoleKeyInfo cki;
 
+                                        do
+                                        {
+                                            cki = Console.ReadKey(true);
+                                        }
+                                        while (cki.Key != ConsoleKey.Escape);*/
+
+                    int value = 0;
                     do
                     {
-                        cki = Console.ReadKey(true);
+                        value = Console.Read();
+
                     }
-                    while (cki.Key != ConsoleKey.Escape);
+                    while (value != 27);
                 }
 
 

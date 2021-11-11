@@ -70,6 +70,7 @@ class RGBD_Sensor(Sensor):
                     self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
                     self.zed.retrieve_measure(self.depth, sl.MEASURE.DEPTH) #TODO
                     im_arr = self.image.get_data()[:, :, :3]
+                    im_arr = im_arr[..., ::-1]
                     frame = cv2.resize(im_arr, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
                     cv2.imshow('Input', frame)
 
@@ -111,6 +112,7 @@ class RGBD_Sensor(Sensor):
                     self.record_timestamp()
 
                     im_arr = self.image.get_data()[:, :, :3]
+                    im_arr = im_arr[..., ::-1]
                     depth_arr = self.depth.get_data() # TODO
                     im_frames[i] = im_arr
                     depth_frames[i] = depth_arr # TODO

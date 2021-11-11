@@ -78,6 +78,8 @@ def get_sensor_files_list(file_path, sensor):
         sensor_files_list.append(os.path.join(file_path, "NOM_RESPWaveExport.csv") ) 
         sensor_files_list.append(os.path.join(file_path, "MPDataExport.csv") )
         sensor_files_list.append(os.path.join(file_path, "MPrawoutput.txt") )
+        sensor_files_list.append(os.path.join(file_path, "vital_matrix.npy") )
+        
 
     return sensor_files_list
         # if (config.getint("mmhealth", "read_rf_pkl") == 1):

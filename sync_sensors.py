@@ -23,7 +23,7 @@ import sensors.rf_UDP.organizer_copy as org
 def cleanup_mx800(folder_name):
     file_list = ['MPrawoutput.txt','NOM_ECG_ELEC_POTL_IIWaveExport.csv','NOM_PLETHWaveExport.csv', 'MPDataExport.csv', 'NOM_RESPWaveExport.csv']
     for file in file_list:
-        if (os.path.isfile('file')): # if file exists
+        if (os.path.isfile(file)): # if file exists
             shutil.move(file, os.path.join(folder_name, file)) #os.replace cannot copy files across drives
         # os.remove(file)
 
@@ -65,7 +65,9 @@ def read_pickle_rf(folder_name):
                 pickle.dump(to_save, f, protocol=pickle.HIGHEST_PROTOCOL)
     
 
-wait_time = 3 #MX800 wait time to ensure that it begins recording before any sensor does.
+mx800_init_time = 3.9
+mx800_buffer = 1
+wait_time = mx800_init_time + mx800_buffer #MX800 wait time to ensure that it begins recording before any sensor does.
 calibrate_mode = config.getint("mmhealth", "calibration_mode") 
 
 def mic_main(acquisition_time, folder_name, synchronizer):
@@ -139,11 +141,11 @@ def mx800_main(acquisition_time, folder_name, synchronizer):
     mx800_instance = MX800_Sensor(filename="mx800", foldername=folder_name)
     print("Ready mx800 device")
     synchronizer.wait()
-    mx800_instance.acquire(acquisition_time = acquisition_time+wait_time + 2)
+    mx800_instance.acquire(acquisition_time = acquisition_time + wait_time)
 
 def progress_main(acquistion_time, folder_name, synchronizer):
     synchronizer.wait()
-    time.sleep(wait_time)
+    # time.sleep(wait_time)
     print("\nProgress:")
     for i in progressbar(range(acquistion_time)):
         time.sleep(1)
@@ -240,21 +242,19 @@ if __name__ == '__main__':
     print("Time taken: {}".format(end-start))
     
     #--------------------- Post-Processing ---------------------------
-
     if(sensors_list.count(mx800_main) != 0):
         print("Cleaning up MX800 files")
         vital_sign_str = config.get("mmhealth", "vital_sign_list")
         vital_sign_list = aslist(vital_sign_str, flatten=True)
-
         cleanup_mx800(data_folder_name)
         vital_matrix(sensors_list, vital_sign_list, data_folder_name) # interpolate_ppg_timestamp(sensor_file_name="rgbd_local.txt", file_dir_mx800=data_folder_name)
 
-    print("Cleaning up RF dump files")
-    cleanup_rf()
-
-    if (config.getint("mmhealth", "read_rf_pkl") == 1):
-        print("Reading RF pickle files")
-        read_pickle_rf(data_folder_name)
+    if(sensors_list.count(rf_main) != 0):
+        print("Cleaning up RF dump files")
+        cleanup_rf()
+        if (config.getint("mmhealth", "read_rf_pkl") == 1):
+            print("Reading RF pickle files")
+            read_pickle_rf(data_folder_name)
     
     if (config.getint("mmhealth", "tiff_to_avi") == 1):
         print("Converting .tiff files to .avi")

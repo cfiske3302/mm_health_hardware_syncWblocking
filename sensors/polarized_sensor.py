@@ -199,20 +199,20 @@ class Polarized_Sensor(Sensor):
                         .reshape((image_result.GetHeight(), -1))
                     )
                     if (i == 0):
-                        print(image_data.shape)
-                        print(image_data.dtype)
+                        # print(image_data.shape)
+                        # print(image_data.dtype)
                         im_0 = image_data[1::2, 1::2] #im_0
-                        print(im_0.shape)
-                        print(im_0)
+                        # print(im_0.shape)
+                        # print(im_0)
                         im_45 = image_data[0::2, 1::2] # im_45
-                        print(im_45.shape)
-                        print(im_45)
+                        # print(im_45.shape)
+                        # print(im_45)
                         im_90 = image_data[0::2, 0::2] #im_90
-                        print(im_90.shape)
-                        print(im_90)
+                        # print(im_90.shape)
+                        # print(im_90)
                         im_135 = image_data[1::2, 0::2] #im_135
-                        print(im_135.shape)
-                        print(im_135)
+                        # print(im_135.shape)
+                        # print(im_135)
 
                     image_result.Release()
 

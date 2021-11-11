@@ -6,6 +6,9 @@ import os
 import keyboard
 import sys
 import shutil
+import subprocess
+import signal
+# import msvcrt
 
 from config import *
 from sensor import Sensor
@@ -18,64 +21,36 @@ class MX800_Sensor(Sensor):
         self.sensor_type = "mx800"
 
         #set parameters for video recorder
-        self.long_pause = 1
-        self.short_pause = 0.1
-        self.abs_path  = r"C:\Users\111\Desktop\mmhealth_2\sensors\VSCaptureMP-master\VSCaptureMP\VSCaptureMP\bin\Debug"
+        # self.long_pause = 1
+        # self.short_pause = 0.1
+        self.abs_path  = r"C:\Users\111\Desktop\mmhealth_2\sensors\VSCaptureMP-master-copy\VSCaptureMP\VSCaptureMP\bin\Debug"
+        self.filepath = os.path.join(self.abs_path, "VSCaptureMP.exe")
+        wait_time = 1
+        # self.time_delta = 3.9 # empirically determined
 
-        #initialize capture
-        os.startfile(os.path.join(self.abs_path, "VSCaptureMP.exe"))
-        # # COM Port
-        # time.sleep(self.long_pause)
-        # keyboard.write('COM7')
-        # pyautogui.press('enter')
-        # # BAUD Rate
-        # time.sleep(self.short_pause)
-        # keyboard.write('92600')
-        # pyautogui.press('enter')
-        # ...
-        time.sleep(self.long_pause)
-        keyboard.write('2')
-        pyautogui.press('enter')
-        # ...
-        time.sleep(self.short_pause)
-        keyboard.write('1')
-        pyautogui.press('enter')
-        # ...
-        time.sleep(self.short_pause)
-        keyboard.write('1')
-        pyautogui.press('enter')
-        # ...
-        # time.sleep(self.short_pause)
-        # keyboard.write('test_mx')
-        # pyautogui.press('enter')
-        # ...
-        time.sleep(self.short_pause)
-        keyboard.write('2')
-        pyautogui.press('enter')
-        # ...
-        time.sleep(self.short_pause)
-        keyboard.write('1')
-        pyautogui.press('enter')
-        # IP Address
-        time.sleep(self.short_pause)
-        keyboard.write('169.254.150.16') # 192.168.33.32
-        pyautogui.press('enter')
 
+        self.record = subprocess.Popen([self.filepath], stdin=subprocess.PIPE) # stdout=subprocess.PIPE, stdin=subprocess.PIPE, 
+        time.sleep(wait_time)
+        
     def __del__(self) -> None:
         self.release_sensor()
         print("Released {} resources.".format(self.sensor_type))
         
     def acquire(self, acquisition_time : int) -> bool:
-        pyautogui.press('enter')
+        # print("acquire start *************************")
+        record_start = os.write(self.record.stdin.fileno(), chr(32).encode() )
+        # print("recording start *************************")
+        # time.sleep(acquisition_time + self.time_delta )
+        time.sleep(acquisition_time )
+        record_esc = self.record.communicate(input= chr(27).encode() )[0]
+        # print("recording end *************************")
 
-        # print('MX800 start')
-        time.sleep(acquisition_time)
         self.release_sensor()
 
 
     def release_sensor(self) -> bool:
         #Release mx800
-        pyautogui.press('escape')
+        pass
 
     def print_stats(self):
         print("_____________ mx800 Specifications _____________")
@@ -87,6 +62,7 @@ class MX800_Sensor(Sensor):
 
 #To test code, run this file.
 if __name__ == '__main__':
+    time_delta = 3.9 # empirically determined
 
-    mic = MX800_Sensor(filename="test_run")
-    mic.acquire(acquisition_time=10)
+    mx800 = MX800_Sensor(filename="test_run")
+    mx800.acquire(acquisition_time=10 + time_delta)
