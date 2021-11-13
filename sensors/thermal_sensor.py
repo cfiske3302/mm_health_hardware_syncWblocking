@@ -28,7 +28,7 @@ class Thermal_Sensor(Sensor):
         self.counter = 0
 
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
-        self.reader = imageio.get_reader('<video0>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
+        self.reader = imageio.get_reader('<video1>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
 
     def __del__(self) -> None:
         self.release_sensor()
