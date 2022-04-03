@@ -143,8 +143,8 @@ def mx800_main(acquisition_time, folder_name, synchronizer):
     synchronizer.wait()
     mx800_instance.acquire(acquisition_time = acquisition_time + wait_time)
 
-def progress_main(acquistion_time, folder_name, synchronizer):
-    synchronizer.wait()
+def progress_main(acquistion_time, folder_name):
+    # synchronizer.wait()
     # time.sleep(wait_time)
     print("\nProgress:")
     for i in progressbar(range(acquistion_time)):
@@ -188,7 +188,8 @@ if __name__ == '__main__':
         # sensors_list = [rgbd_main, polarized_main, thermal_main]
         folder_name = "calibration" + "_"
     else:
-        sensors_list = [progress_main]
+        # sensors_list = [progress_main]
+        sensors_list = []
         folder_name = str(config.getint("mmhealth", "volunteer_id") ) + "_"
 
     for sensor in sensors_list_str:
@@ -217,9 +218,11 @@ if __name__ == '__main__':
     
     jobs = []
     print(sensors_list_str)
-    num_sensors = len(sensors_list_str) + 1 #RGB, NIR, Polarized, Webcam Audio, Mic Audio
+    # num_sensors = len(sensors_list_str) + 1 #RGB, NIR, Polarized, Webcam Audio, Mic Audio
+    num_sensors = len(sensors_list_str)
     time_acquire = config.getint("mmhealth", "acquire_time") #seconds
     sync_barrior = mp.Barrier(num_sensors)
+    print(f"there are {num_sensors} sensors")
     #-------------------- Folder Config ---------------------------
     start_num = 1
     data_folder_name = os.path.join(config.get("mmhealth", "data_path"), folder_name)
