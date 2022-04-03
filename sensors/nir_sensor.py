@@ -61,7 +61,7 @@ class NIR_Sensor(Sensor):
         self.release_sensor()
         print("Released {} resources.".format(self.sensor_type))
 
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         if (self.calibrate_mode == 1):
             run = True
             while( run == True):
@@ -103,6 +103,7 @@ class NIR_Sensor(Sensor):
             # video = PyCapture2.FlyCapture2Video()
             # video.AVIOpen((self.filepath + self.format).encode('utf-8'), self.fps)
             for i in range(NUM_FRAMES):
+                barrier.wait()
                 try:
                     image = self.cam_nir.retrieveBuffer()
                     self.record_timestamp()

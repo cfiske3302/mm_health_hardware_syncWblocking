@@ -36,7 +36,7 @@ class RGBD_Sensor(Sensor):
             self.init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
         else:
             self.init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
-        self.init_params.camera_fps = self.fps  # Set fps at 30
+        self.init_params.camera_fps = self.fps  # Set fps at 30. Think this cannot be changed though
         self.init_params.depth_mode = sl.DEPTH_MODE.ULTRA
 
         # Open the camera
@@ -60,7 +60,7 @@ class RGBD_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         # print(self.filepath)
         
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         if (self.calibrate_mode == 1):
             run = True
             while( run == True):
@@ -105,6 +105,7 @@ class RGBD_Sensor(Sensor):
 
             for i in range(NUM_FRAMES):
                 # Grab an image, a RuntimeParameters object must be given to grab()
+                barrier.wait()
                 if self.zed.grab(self.runtime_parameters) == sl.ERROR_CODE.SUCCESS:
                     # A new image is available if grab() returns SUCCESS
                     self.zed.retrieve_image(self.image, sl.VIEW.LEFT)

@@ -75,21 +75,21 @@ def mic_main(acquisition_time, folder_name, synchronizer):
     print("Ready mic")
     synchronizer.wait()
     time.sleep(wait_time)
-    mic.acquire(acquisition_time = acquisition_time)
+    mic.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def webcam_main(acquisition_time, folder_name, synchronizer):
     webcam = Audio_Sensor(filename="webcam_audio", foldername=folder_name)
     print("Ready webcam")
     synchronizer.wait()
     time.sleep(wait_time)
-    webcam.acquire(acquisition_time = acquisition_time)
+    webcam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def nir_main(acquisition_time, folder_name, synchronizer, verbose=False):
     nir_cam = NIR_Sensor(filename="nir", foldername=folder_name)
     print("Ready nir")
     synchronizer.wait()
     time.sleep(wait_time)
-    nir_cam.acquire(acquisition_time = acquisition_time)
+    nir_cam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
     if(verbose):
         nir_cam.print_stats()
 
@@ -98,21 +98,21 @@ def polarized_main(acquisition_time, folder_name, synchronizer):
     print("Ready polarized cam")
     synchronizer.wait()
     time.sleep(wait_time)
-    polarized_cam.acquire(acquisition_time = acquisition_time)
+    polarized_cam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def rgb_main(acquisition_time, folder_name, synchronizer):
     rgb_cam = RGB_Sensor(filename="rgb", foldername=folder_name)
     print("Ready rgb cam")
     synchronizer.wait()
     time.sleep(wait_time)
-    rgb_cam.acquire(acquisition_time = acquisition_time)
+    rgb_cam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def rgbd_main(acquisition_time, folder_name, synchronizer):
     rgbd_cam = RGBD_Sensor(filename="rgbd", foldername=folder_name)
     print("Ready rgbd cam")
     synchronizer.wait()
     time.sleep(wait_time)
-    rgbd_cam.acquire(acquisition_time = acquisition_time)
+    rgbd_cam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def uv_main(acquisition_time, folder_name, synchronizer):
     uv_cam = UV_Sensor(filename="uv", foldername=folder_name)
@@ -126,7 +126,7 @@ def thermal_main(acquisition_time, folder_name, synchronizer):
     print("Ready thermal cam")
     synchronizer.wait()
     time.sleep(wait_time)
-    thermal_cam.acquire(acquisition_time = acquisition_time)
+    thermal_cam.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def rf_main(acquisition_time, folder_name, synchronizer, sensor_on=True):
     rf_s = RF_Sensor(filename="rf", foldername=folder_name, sensor_on=sensor_on)
@@ -135,7 +135,7 @@ def rf_main(acquisition_time, folder_name, synchronizer, sensor_on=True):
     print("Ready rf device")
     synchronizer.wait()
     time.sleep(wait_time)
-    rf_s.acquire(acquisition_time = acquisition_time)
+    rf_s.acquire(acquisition_time = acquisition_time, barrier=synchronizer)
 
 def mx800_main(acquisition_time, folder_name, synchronizer):
     mx800_instance = MX800_Sensor(filename="mx800", foldername=folder_name)
@@ -231,12 +231,12 @@ if __name__ == '__main__':
     os.makedirs(data_folder_name)
     #-------------------- Start Sensors ----------------------------
     for sensor in sensors_list:
-        proc = mp.Process(target=sensor, args= (time_acquire,folder_name,sync_barrior))
+        proc = mp.Process(target=sensor, args=(time_acquire,folder_name,sync_barrior))
         jobs.append(proc)
         proc.start()
 
     for job in jobs:
-        job.join() 
+        job.join()
 
     end = time.time()
     print("Time taken: {}".format(end-start))

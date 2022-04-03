@@ -36,7 +36,7 @@ class RGB_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         # print(self.filepath)
         
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         if (self.calibrate_mode == 1):
             for im in self.reader:
                 frame = cv2.resize(im, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
@@ -69,6 +69,7 @@ class RGB_Sensor(Sensor):
             frames = np.empty((NUM_FRAMES, self.height, self.width, self.channels), np.dtype('uint16'))
 
             for im in self.reader:
+                barrier.wait()
                 if (self.counter < NUM_FRAMES):
                     if ((self.counter != 0)):
                         if ( np.max(im  - frames[self.counter-1]) != 0 ):

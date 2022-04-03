@@ -41,9 +41,10 @@ class Audio_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         
 
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
 
         for i in range(0, int(self.RATE / self.CHUNK * acquisition_time)):
+            barrier.wait()
             self.data = self.stream.read(self.CHUNK)
             self.frames.append(self.data)
             self.record_timestamp()

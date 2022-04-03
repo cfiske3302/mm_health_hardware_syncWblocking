@@ -123,7 +123,7 @@ class Polarized_Sensor(Sensor):
         self.release_sensor()
         print("Released {} resources.".format(self.sensor_type))
 
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         self.cam_polar.BeginAcquisition()
         if (self.calibrate_mode == 1):
             run = True
@@ -186,6 +186,7 @@ class Polarized_Sensor(Sensor):
             frames_135 = np.empty((NUM_FRAMES, self.height, self.width ), np.dtype('uint8'))
             # self.cam_polar.BeginAcquisition()
             for i in range(NUM_FRAMES):
+                barrier.wait()
                 image_result = self.cam_polar.GetNextImage(1000)
                 self.record_timestamp()
                 if image_result.IsIncomplete():

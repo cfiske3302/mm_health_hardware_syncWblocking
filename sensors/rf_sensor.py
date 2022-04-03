@@ -56,8 +56,8 @@ class RF_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         # print(self.filepath)
         
-    def acquire(self, acquisition_time : int) -> bool:
-        all_data = self.read(acquisition_time)
+    def acquire(self, acquisition_time, barrier : int) -> bool:
+        all_data = self.read(acquisition_time, barrier=barrier)
 
         print("Start time: ", all_data[3])
         print("End time: ", all_data[4])
@@ -107,7 +107,7 @@ class RF_Sensor(Sensor):
         self.data_socket.close()
         self.config_socket.close()
 
-    def read(self, acquisition_time, timeout=1):
+    def read(self, acquisition_time, barrier, timeout=1):
         """ Read in a single packet via UDP
 
         Args:
@@ -131,9 +131,14 @@ class RF_Sensor(Sensor):
 
         s_time = dt.utcnow()
         start_time = s_time.isoformat()+'Z'
+        captures_since_last_wait = 5 # ~5 times faster than 30Hz (from vital_dicts ~5.67)
 
         try:
             while True:
+                if captures_since_last_wait == 5:
+                    barrier.wait()
+                    captures_since_last_wait = 0
+                captures_since_last_wait += 1
                 packet_num, byte_count, packet_data = self._read_data_packet()
                 self.record_timestamp()
                 all_data.append(packet_data)

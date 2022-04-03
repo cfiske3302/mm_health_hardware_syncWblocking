@@ -26,7 +26,7 @@ class Sensor(abc.ABC):
         
 
     @abc.abstractmethod
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         """[Main Logic for acquiring data of sensor_type
             sensor should already be initialized and running after __init__()
             acquire only captures and saves data]

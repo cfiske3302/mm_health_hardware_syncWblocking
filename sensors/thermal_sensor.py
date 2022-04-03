@@ -35,7 +35,7 @@ class Thermal_Sensor(Sensor):
         print("Released {} resources.".format(self.sensor_type))
         # print(self.filepath)
         
-    def acquire(self, acquisition_time : int) -> bool:
+    def acquire(self, acquisition_time, barrier : int) -> bool:
         if (self.calibrate_mode == 1):
             for im in self.reader:
                 upsampled_frame = im[:,:,0]
@@ -71,6 +71,7 @@ class Thermal_Sensor(Sensor):
             frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
 
             for im in self.reader:
+                barrier.wait()
                 if (self.counter < NUM_FRAMES):
                     if ((self.counter != 0)):
                         upsampled_frame = im[:,:,0]
