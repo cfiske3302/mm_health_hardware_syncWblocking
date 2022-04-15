@@ -132,14 +132,20 @@ class RF_Sensor(Sensor):
         s_time = dt.utcnow()
         start_time = s_time.isoformat()+'Z'
         captures_since_last_wait = 5 # ~5 times faster than 30Hz (from vital_dicts ~5.67)
+        total_barriers = 0 #keep track of this so the amount of times the barrier is reached is the same for all senseors
+        NUM_BARRIERS = config.getint("mmhealth", "fps")*acquisition_time
+        print(f"numb {NUM_BARRIERS}")
 
         try:
             while True:
                 if captures_since_last_wait == 5:
+                    print(f"rf: {total_barriers}")
                     barrier.wait()
                     captures_since_last_wait = 0
+                    total_barriers += 1
                 captures_since_last_wait += 1
                 packet_num, byte_count, packet_data = self._read_data_packet()
+                # print("148")
                 self.record_timestamp()
                 all_data.append(packet_data)
                 packet_num_all.append(packet_num)
@@ -149,7 +155,8 @@ class RF_Sensor(Sensor):
 
                 #### Stopping after n seconds
                 curr_time = dt.utcnow()
-                if (curr_time - s_time) > datetime.timedelta(seconds=acquisition_time): #alternatively: N_SECONDS
+                # if (curr_time - s_time) > datetime.timedelta(seconds=acquisition_time): #alternatively: N_SECONDS
+                if(total_barriers == NUM_BARRIERS):
                     end_time = dt.utcnow().isoformat()+'Z'
                     print("Total packets captured ", num_all_packets)
                     self.save_timestamps()
@@ -157,6 +164,7 @@ class RF_Sensor(Sensor):
                     return (all_data, packet_num_all, byte_count_all, start_time, end_time)
 
         except socket.timeout:
+            print("socket timeout")
             end_time = dt.utcnow().isoformat()+'Z'
             print("Total packets captured ", num_all_packets)
             self.save_timestamps()

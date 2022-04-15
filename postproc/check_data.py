@@ -2,6 +2,7 @@
 import os
 import imageio
 import numpy as np
+from datetime import datetime
 from six import string_types
 
 import sys
@@ -86,6 +87,7 @@ def get_sensor_files_list(file_path, sensor):
 
 
 def get_img_stats(video_path):
+    print(f"video path {video_path}")
     imarray = imageio.volread(video_path)
     #sample 20 frames
     num_frames = imarray.shape[0]
@@ -102,8 +104,12 @@ def get_img_stats(video_path):
         time_stamp_file = os.path.join(path, "polarized_local.txt")
     else:
         time_stamp_file = os.path.splitext(video_path)[0] + "_local.txt"
+    # print(f"timestamp file: {time_stamp_file}")
     # print(time_stamp_file)
-    time_stamps = np.genfromtxt(time_stamp_file, delimiter='\n')
+    time_stamps = np.genfromtxt(time_stamp_file, converters={0: lambda x: datetime.strptime(str(x)[2:-1], '%Y-%m-%d %H:%M:%S.%f').timestamp()}, delimiter='\n')
+    time_stamps = time_stamps-time_stamps[0]
+    # print(f"timestamps {time_stamps}")
+    
     fps = num_frames / (time_stamps[-1] - time_stamps[0])
     fps_jitter = np.std(np.diff(time_stamps))
 
@@ -196,6 +202,7 @@ def check_data_folder(dir_path):
                 print("WARNING: File {} does not exist in Path {}".format(  filename_ext, file) )
             
     print("Comparing against config parameters:")
+    print(f"sensor_dict {sensors_dict}")
     compare_config(sensors_dict)
     # print("Comparing sensor start and end times:")
     # compare_sensor_times(sensors_dict)

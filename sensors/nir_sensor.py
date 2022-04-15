@@ -103,6 +103,7 @@ class NIR_Sensor(Sensor):
             # video = PyCapture2.FlyCapture2Video()
             # video.AVIOpen((self.filepath + self.format).encode('utf-8'), self.fps)
             for i in range(NUM_FRAMES):
+                print(f"nir: {i}")
                 barrier.wait()
                 try:
                     image = self.cam_nir.retrieveBuffer()

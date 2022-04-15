@@ -27,8 +27,22 @@ class Thermal_Sensor(Sensor):
         self.calibrate_format = ".png"
         self.counter = 0
 
+        # kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
+        # self.reader = imageio.get_reader('<video1>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
+
+        try:
+            self.reader = imageio.get_reader('<video0>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
+        except:
+            self.reader = imageio.get_reader('<video1>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
+            print("switching!")
+
+        #test self.reader ambiguity
+        test_img = self.reader.get_data(0)
+        # Thermal sensor test image is changing between trials.
+        self.width   = int(test_img.shape[1]/2)
+        self.height  = int(test_img.shape[0]/2)
+        print(test_img.shape)
         kargs = { 'fps': self.fps, 'ffmpeg_params': ['-s',str(self.width) + 'x' + str(self.height)] }
-        self.reader = imageio.get_reader('<video1>', format = "FFMPEG", dtype = "uint16", fps = self.fps)
 
     def __del__(self) -> None:
         self.release_sensor()
@@ -68,18 +82,23 @@ class Thermal_Sensor(Sensor):
                 # #     break
         else:
             NUM_FRAMES = self.fps*acquisition_time  # number of images to capture
+            print(NUM_FRAMES)
             frames = np.empty((NUM_FRAMES, self.height, self.width), np.dtype('uint16'))
 
             for im in self.reader:
-                barrier.wait()
+                # print("therm @ bar")
                 if (self.counter < NUM_FRAMES):
+                    print(f"therm: {self.counter}")
+                    barrier.wait()
                     if ((self.counter != 0)):
                         upsampled_frame = im[:,:,0]
                         downsampled_frame = upsampled_frame[::2,::2]
+                        #If we are getting double frames, we either slow down all sensors or skip a frame
+                        #Right now, we skip a frame
                         if ( np.max(downsampled_frame  - frames[self.counter-1]) != 0 ):
                             frames[self.counter] = downsampled_frame # Reads 3 channels, but each channel is identical (same pixel info)
                             self.record_timestamp()
-                            self.counter += 1
+                        self.counter += 1
                     else:
                         upsampled_frame = im[:,:,0]
                         frames[self.counter] = upsampled_frame[::2,::2] # Reads 3 channels, but each channel is identical (same pixel info)
@@ -88,9 +107,11 @@ class Thermal_Sensor(Sensor):
                 else:
                     break
 
+            print("finished data collection")
             imageio.mimwrite(self.filepath + self.format, frames, bigtiff=True)
-
+            print("saved data file")
             self.save_timestamps()
+            print("saved timestamps")
             self.time_stamps = []
 
         

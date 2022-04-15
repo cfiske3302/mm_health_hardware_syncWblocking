@@ -269,4 +269,4 @@ if __name__ == '__main__':
                 tiff_to_avi(os.path.join(data_folder_name, file))
 
     #--------------------- Check Data ---------------------------
-    check_data_folder(data_folder_name)
+    # check_data_folder(data_folder_name)

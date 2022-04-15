@@ -186,6 +186,7 @@ class Polarized_Sensor(Sensor):
             frames_135 = np.empty((NUM_FRAMES, self.height, self.width ), np.dtype('uint8'))
             # self.cam_polar.BeginAcquisition()
             for i in range(NUM_FRAMES):
+                print(f"pol: {i}")
                 barrier.wait()
                 image_result = self.cam_polar.GetNextImage(1000)
                 self.record_timestamp()
