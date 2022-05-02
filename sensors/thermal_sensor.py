@@ -94,10 +94,13 @@ class Thermal_Sensor(Sensor):
                         upsampled_frame = im[:,:,0]
                         downsampled_frame = upsampled_frame[::2,::2]
                         #If we are getting double frames, we either slow down all sensors or skip a frame
-                        #Right now, we skip a frame
-                        if ( np.max(downsampled_frame  - frames[self.counter-1]) != 0 ):
-                            frames[self.counter] = downsampled_frame # Reads 3 channels, but each channel is identical (same pixel info)
-                            self.record_timestamp()
+                        #Right now, we skip a frame. 
+                        #LOL, this just takes the double frames bc otherwise it will conflict with other sensors and never terminate
+                        # if ( np.max(downsampled_frame  - frames[self.counter-1]) != 0 ): 
+
+                        frames[self.counter] = downsampled_frame # Reads 3 channels, but each channel is identical (same pixel info)
+                        self.record_timestamp()
+                        
                         self.counter += 1
                     else:
                         upsampled_frame = im[:,:,0]

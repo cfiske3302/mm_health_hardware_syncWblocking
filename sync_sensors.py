@@ -1,4 +1,4 @@
-import multiprocessing as mp
+import threading
 import time
 import pickle
 from natsort import natsorted, ns
@@ -221,7 +221,7 @@ if __name__ == '__main__':
     # num_sensors = len(sensors_list_str) + 1 #RGB, NIR, Polarized, Webcam Audio, Mic Audio
     num_sensors = len(sensors_list_str)
     time_acquire = config.getint("mmhealth", "acquire_time") #seconds
-    sync_barrior = mp.Barrier(num_sensors)
+    sync_barrior = threading.Barrier(num_sensors)
     print(f"there are {num_sensors} sensors")
     #-------------------- Folder Config ---------------------------
     start_num = 1
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     os.makedirs(data_folder_name)
     #-------------------- Start Sensors ----------------------------
     for sensor in sensors_list:
-        proc = mp.Process(target=sensor, args=(time_acquire,folder_name,sync_barrior))
+        proc = threading.Process(target=sensor, args=(time_acquire,folder_name,sync_barrior))
         jobs.append(proc)
         proc.start()
 
