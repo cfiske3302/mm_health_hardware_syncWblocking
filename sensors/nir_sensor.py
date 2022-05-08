@@ -118,7 +118,7 @@ class NIR_Sensor(Sensor):
 
             self.save_timestamps()
             self.time_stamps = []
-            
+
     def release_sensor(self) -> bool:
         # Deinitialize camera
         self.cam_nir.stopCapture()
